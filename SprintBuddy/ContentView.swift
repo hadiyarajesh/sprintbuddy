@@ -66,14 +66,13 @@ struct ContentView: View {
     // MARK: - Regions
 
     private func sidebarRegion(_ p: SBPalette) -> some View {
-        // Placeholder — real sidebar content (sprint lists, new-sprint button,
-        // settings/help entry points) lands in Task 9.
-        Rectangle()
-            .fill(p.sidebar)
-            .frame(width: 274)
-            .overlay(alignment: .trailing) {
-                Rectangle().fill(p.border).frame(width: 1)
-            }
+        // `p` is unused here — SidebarView reads the palette from the
+        // environment (injected on the root `ZStack` above).
+        SidebarView(
+            sprints: sprints,
+            appState: appState,
+            onNewSprint: { appState.newSprintOpen = true }
+        )
     }
 
     private func boardRegion(_ p: SBPalette) -> some View {
