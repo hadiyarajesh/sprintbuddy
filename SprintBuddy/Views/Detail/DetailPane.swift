@@ -33,7 +33,15 @@ struct DetailPane: View {
     private var isWeekendDate: Bool { DateKey.isWeekend(date) }
 
     private var dateLong: String {
-        "\(SprintMath.monthLong(date)) \(SprintMath.dayOfMonth(date)), \(Calendar.current.component(.year, from: date))"
+        Self.longDate(day.dateISO)
+    }
+
+    /// Shared "<monthLong> <dayOfMonth>, <year>" formatting, also used by
+    /// `ContentView.detailDateLong` for the `CollapsedStrip` label so both
+    /// places render an identical string for the same day.
+    static func longDate(_ iso: String) -> String {
+        let d = DateKey.parse(iso)
+        return "\(SprintMath.monthLong(d)) \(SprintMath.dayOfMonth(d)), \(Calendar.current.component(.year, from: d))"
     }
 
     private var sortedUpdates: [DayUpdate] {
@@ -113,7 +121,7 @@ struct DetailPane: View {
         case .leave:
             return StatusStyle(label: "Leave", color: palette.error, tint: palette.redTint, icon: "arrow.uturn.left")
         case .holiday:
-            return StatusStyle(label: "Holiday", color: palette.holidayText, tint: palette.amberTint, icon: "calendar")
+            return StatusStyle(label: "Holiday", color: palette.warning, tint: palette.amberTint, icon: "calendar")
         case .weekend:
             return StatusStyle(label: "Weekend", color: palette.grey2, tint: palette.muted, icon: "clock")
         }
@@ -151,7 +159,7 @@ struct DetailPane: View {
         VStack(spacing: 2) {
             statusMenuItem(.working, icon: "pencil", label: "Working", color: palette.blue)
             statusMenuItem(.leave, icon: "arrow.uturn.left", label: "Leave", color: palette.error)
-            statusMenuItem(.holiday, icon: "calendar", label: "Holiday", color: palette.holidayText)
+            statusMenuItem(.holiday, icon: "calendar", label: "Holiday", color: palette.warning)
             if isWeekendDate {
                 statusMenuItem(.weekend, icon: "clock", label: "Weekend", color: palette.grey3)
             }

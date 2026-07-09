@@ -143,6 +143,7 @@ struct ContentView: View {
             } else {
                 appState.pendingImport = dtos
                 appState.importWarnOpen = true
+                appState.importError = ""
             }
         }
     }
@@ -259,8 +260,7 @@ struct ContentView: View {
     }
 
     private func detailDateLong(_ day: Day) -> String {
-        let d = DateKey.parse(day.dateISO)
-        return "\(SprintMath.monthLong(d)) \(SprintMath.dayOfMonth(d)), \(Calendar.current.component(.year, from: d))"
+        DetailPane.longDate(day.dateISO)
     }
 }
 
