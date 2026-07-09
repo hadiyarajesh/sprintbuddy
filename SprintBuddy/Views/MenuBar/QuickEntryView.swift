@@ -41,6 +41,13 @@ struct QuickEntryView: View {
         target != nil && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// The most recent day *before today* that has updates — the recap shown
+    /// at the bottom of the panel.
+    private var recentRecap: StandupRecap.DayRecap? {
+        let yesterday = DateKey.iso(DateKey.addDays(DateKey.today(), -1))
+        return StandupRecap.mostRecentLogged(sprints.map { $0.toDTO() }, onOrBefore: yesterday)
+    }
+
     // MARK: - Theme
 
     /// Honor the app's chosen theme (stored by AppState under "theme"); fall
@@ -66,6 +73,11 @@ struct QuickEntryView: View {
                 composer(p, sprint: target.sprint, day: target.day)
             } else {
                 emptyState(p)
+            }
+
+            if let recap = recentRecap {
+                Divider().overlay(p.border)
+                recapSection(p, recap)
             }
         }
         .frame(width: 320)
@@ -178,6 +190,44 @@ struct QuickEntryView: View {
         .opacity(canSave ? 1 : 0.55)
     }
 
+    // MARK: - Recent recap
+
+    private func recapSection(_ p: SBPalette, _ recap: StandupRecap.DayRecap) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Text("RECENT")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(0.4)
+                    .foregroundStyle(p.grey2)
+                Text(SprintMath.fmt(DateKey.parse(recap.dateISO)))
+                    .font(.system(size: 11))
+                    .foregroundStyle(p.grey3)
+                Spacer(minLength: 0)
+            }
+            ForEach(Array(recap.updates.prefix(3).enumerated()), id: \.offset) { _, u in
+                HStack(alignment: .top, spacing: 6) {
+                    Circle()
+                        .fill(UpdateMeta.color(u.type, p))
+                        .frame(width: 6, height: 6)
+                        .padding(.top, 5)
+                    Text(u.text)
+                        .font(.system(size: 12))
+                        .foregroundStyle(p.textNavy)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            if recap.updates.count > 3 {
+                Text("+\(recap.updates.count - 3) more")
+                    .font(.system(size: 11))
+                    .foregroundStyle(p.grey3)
+                    .padding(.leading, 12)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+    }
+
     // MARK: - Empty state (today isn't in any sprint)
 
     private func emptyState(_ p: SBPalette) -> some View {
@@ -236,6 +286,7 @@ struct QuickEntryView: View {
             DayUpdate(id: UUID().uuidString, type: draftType, text: trimmed, sortIndex: nextIndex)
         )
         try? modelContext.save()
+        RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
         draftText = ""
         justSaved = true
         savedResetTask?.cancel()

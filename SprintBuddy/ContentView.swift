@@ -22,6 +22,13 @@ struct ContentView: View {
 
     private var palette: SBPalette { SBPalette(colorScheme) }
 
+    /// Changes whenever something that affects the recap notification changes:
+    /// total update count or the recap prefs. Drives a reschedule.
+    private var recapSignature: String {
+        let updates = sprints.reduce(0) { $0 + $1.days.reduce(0) { $0 + $1.updates.count } }
+        return "\(updates)-\(appState.recapEnabled)-\(appState.recapHour)-\(appState.recapMinute)"
+    }
+
     /// The sprint matching `appState.selectedSprintID`, falling back to the
     /// most recently created sprint when there is no selection (or the
     /// selected sprint no longer exists).
@@ -65,6 +72,12 @@ struct ContentView: View {
         .frame(minWidth: 1180, minHeight: 720)
         .onChange(of: sprints.map(\.id), initial: true) { _, _ in
             syncSelection()
+        }
+        // Keep the scheduled daily-recap notification current with the latest
+        // data and recap settings.
+        .task { RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() }) }
+        .onChange(of: recapSignature) { _, _ in
+            RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
         }
         .sheet(isPresented: $appState.newSprintOpen) {
             NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint)

@@ -53,6 +53,18 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(highlightUnlogged, forKey: Keys.highlightUnlogged) }
     }
 
+    /// Daily recap notification: opt-in, at `recapHour`:`recapMinute` local time.
+    /// (`RecapNotifier` reads these same UserDefaults keys.)
+    @Published var recapEnabled: Bool {
+        didSet { UserDefaults.standard.set(recapEnabled, forKey: Keys.recapEnabled) }
+    }
+    @Published var recapHour: Int {
+        didSet { UserDefaults.standard.set(recapHour, forKey: Keys.recapHour) }
+    }
+    @Published var recapMinute: Int {
+        didSet { UserDefaults.standard.set(recapMinute, forKey: Keys.recapMinute) }
+    }
+
     // MARK: - Sheet / popover flags (transient, not persisted)
 
     @Published var newSprintOpen: Bool = false
@@ -80,6 +92,9 @@ final class AppState: ObservableObject {
         theme = d.string(forKey: Keys.theme) ?? "auto"
         showWeekends = (d.object(forKey: Keys.showWeekends) as? Bool) ?? true
         highlightUnlogged = (d.object(forKey: Keys.highlightUnlogged) as? Bool) ?? true
+        recapEnabled = (d.object(forKey: Keys.recapEnabled) as? Bool) ?? false
+        recapHour = (d.object(forKey: Keys.recapHour) as? Int) ?? 10
+        recapMinute = (d.object(forKey: Keys.recapMinute) as? Int) ?? 0
     }
 
     // MARK: - Derived
@@ -104,5 +119,8 @@ final class AppState: ObservableObject {
         static let theme = "theme"
         static let showWeekends = "showWeekends"
         static let highlightUnlogged = "highlightUnlogged"
+        static let recapEnabled = "recapEnabled"
+        static let recapHour = "recapHour"
+        static let recapMinute = "recapMinute"
     }
 }

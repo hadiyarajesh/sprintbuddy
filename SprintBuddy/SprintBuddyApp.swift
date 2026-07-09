@@ -8,12 +8,32 @@
 import SwiftData
 import SwiftUI
 import AppKit
+import UserNotifications
 
 /// Keeps the app running in the menu bar after the main window is closed, so
 /// the quick-logger stays available ("always-on"). ⌘Q still quits normally.
-final class AppDelegate: NSObject, NSApplicationDelegate {
+/// Also routes the daily-recap notification (foreground display + tap-to-open).
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    // Show the recap even when SprintBuddy is the frontmost app.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+        [.banner, .sound]
+    }
+
+    // Tapping the notification brings the main window forward.
+    @MainActor
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse) async {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.windows.first(where: { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
     }
 }
 
