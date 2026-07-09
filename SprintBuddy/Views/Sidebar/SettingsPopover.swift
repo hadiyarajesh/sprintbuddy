@@ -37,6 +37,19 @@ struct SettingsPopover: View {
     var onImport: () -> Void = {}
 
     @Environment(\.palette) private var palette
+    @State private var launchAtLogin = LoginItems.isEnabled
+
+    /// Drives the login-item registration and reflects the real resulting
+    /// status (so a failed register/unregister snaps the toggle back).
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { launchAtLogin },
+            set: { newValue in
+                LoginItems.setEnabled(newValue)
+                launchAtLogin = LoginItems.isEnabled
+            }
+        )
+    }
 
     private static let themes: [(value: String, label: String)] = [
         ("auto", "Auto"),
@@ -55,6 +68,11 @@ struct SettingsPopover: View {
                 .padding(.bottom, 2)
             toggleRow(title: "Show weekends", isOn: $appState.showWeekends)
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
+
+            sectionLabel("Startup")
+                .padding(.top, 12)
+                .padding(.bottom, 2)
+            toggleRow(title: "Launch at login", isOn: launchAtLoginBinding)
 
             sectionLabel("Data")
                 .padding(.top, 12)
