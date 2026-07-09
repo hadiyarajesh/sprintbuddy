@@ -1,0 +1,10 @@
+# Build output (created by scripts/build_unsigned_dmg.sh)
+build/
+
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# macOS
+.DS_Store
