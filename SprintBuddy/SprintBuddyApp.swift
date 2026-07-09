@@ -7,9 +7,20 @@
 
 import SwiftData
 import SwiftUI
+import AppKit
+
+/// Keeps the app running in the menu bar after the main window is closed, so
+/// the quick-logger stays available ("always-on"). ⌘Q still quits normally.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+}
 
 @main
 struct SprintBuddyApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     /// One shared container so the main window and the menu-bar quick-logger
     /// read and write the same store.
     let modelContainer: ModelContainer
