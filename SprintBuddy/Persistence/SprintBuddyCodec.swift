@@ -1,11 +1,13 @@
 import Foundation
 
-enum ScrumBuddyCodec {
+enum SprintBuddyCodec {
     struct Export: Codable { var app: String; var schema: Int; var exportedAt: String; var sprints: [SprintDTO] }
-    enum ImportError: Error, Equatable { case notJSON, notScrumBuddy }
+    enum ImportError: Error, Equatable { case notJSON, notSprintBuddy }
 
     static func encode(_ sprints: [SprintDTO]) -> Data {
-        let payload = Export(app: "ScrumBuddy", schema: 5,
+        // The `app` field is informational only — decode never checks its value,
+        // so files exported under the old "ScrumBuddy" name still import fine.
+        let payload = Export(app: "SprintBuddy", schema: 5,
                              exportedAt: ISO8601DateFormatter().string(from: Date()),
                              sprints: sprints)
         let enc = JSONEncoder()
@@ -18,12 +20,12 @@ enum ScrumBuddyCodec {
             return .failure(.notJSON)
         }
         guard let rawSprints = obj["sprints"] as? [[String: Any]], !rawSprints.isEmpty else {
-            return .failure(.notScrumBuddy)
+            return .failure(.notSprintBuddy)
         }
         let ok = rawSprints.allSatisfy { $0["id"] != nil && $0["start"] != nil && $0["days"] is [String: Any] }
-        guard ok else { return .failure(.notScrumBuddy) }
+        guard ok else { return .failure(.notSprintBuddy) }
         guard let export = try? JSONDecoder().decode(Export.self, from: data) else {
-            return .failure(.notScrumBuddy)
+            return .failure(.notSprintBuddy)
         }
         return .success(export.sprints)
     }

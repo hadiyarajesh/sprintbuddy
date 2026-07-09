@@ -27,6 +27,6 @@ struct SprintStore {
             guard seen.insert(sprint.id).inserted else { return nil }
             return sprint.toDTO()
         }
-        return ScrumBuddyCodec.encode(unique)
+        return SprintBuddyCodec.encode(unique)
     }
 }

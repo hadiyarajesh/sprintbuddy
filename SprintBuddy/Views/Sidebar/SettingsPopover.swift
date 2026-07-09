@@ -148,7 +148,7 @@ struct SettingsPopover: View {
                 .fill(palette.muted)
                 .frame(height: 1)
                 .padding(.top, 10)
-            Text("ScrumBuddy · v2.4.0")
+            Text("SprintBuddy · v2.4.0")
                 .font(.system(size: 11))
                 .foregroundStyle(palette.grey3)
                 .padding(.top, 8)

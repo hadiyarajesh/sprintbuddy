@@ -15,7 +15,7 @@ struct HelpPopover: View {
     @Environment(\.palette) private var palette
 
     private static let tips: [String] = [
-        "Create a sprint and ScrumBuddy generates a card for every day.",
+        "Create a sprint and SprintBuddy generates a card for every day.",
         "Click any day to log effort or mark it as leave or holiday.",
         "Tag each update Done, Doing, or Blocker; back up or move data with JSON export/import.",
     ]

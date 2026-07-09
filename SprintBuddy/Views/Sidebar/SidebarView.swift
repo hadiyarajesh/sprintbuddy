@@ -97,7 +97,7 @@ struct SidebarView: View {
                 .shadow(color: Color(hex: "2a76e1").opacity(0.45), radius: 8, x: 0, y: 4)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("ScrumBuddy")
+                Text("SprintBuddy")
                     .font(.system(size: 18, weight: .bold))
                     .tracking(-0.2)
                     .foregroundStyle(palette.blue)

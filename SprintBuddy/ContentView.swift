@@ -115,13 +115,13 @@ struct ContentView: View {
         let data = SprintStore.exportData(sprints)
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "scrumbuddy-\(DateKey.iso(DateKey.today())).json"
+        panel.nameFieldStringValue = "sprintbuddy-\(DateKey.iso(DateKey.today())).json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         try? data.write(to: url)
     }
 
     /// Reads a user-chosen JSON file via `NSOpenPanel`, validates it through
-    /// `ScrumBuddyCodec`, and either applies it immediately (no existing data)
+    /// `SprintBuddyCodec`, and either applies it immediately (no existing data)
     /// or stages it behind the "Replace all data?" warning.
     private func importData() {
         let panel = NSOpenPanel()
@@ -133,11 +133,11 @@ struct ContentView: View {
             showImportError("Couldn’t read that file.")
             return
         }
-        switch ScrumBuddyCodec.decode(data) {
+        switch SprintBuddyCodec.decode(data) {
         case .failure(.notJSON):
             showImportError("That file isn’t valid JSON.")
-        case .failure(.notScrumBuddy):
-            showImportError("This doesn’t look like a ScrumBuddy export.")
+        case .failure(.notSprintBuddy):
+            showImportError("This doesn’t look like a SprintBuddy export.")
         case .success(let dtos):
             if sprints.isEmpty {
                 applyImport(dtos)
