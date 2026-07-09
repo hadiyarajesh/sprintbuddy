@@ -65,4 +65,30 @@ enum SprintMath {
         if showWeekends { return dates }
         return dates.filter { !DateKey.isWeekend(DateKey.parse($0)) }
     }
+
+    private static let mShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    private static let mLong = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+    private static let wShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+    private static let wLong = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+
+    static func monthShort(_ d: Date) -> String { mShort[Calendar.current.component(.month, from: d) - 1] }
+    static func monthLong(_ d: Date) -> String { mLong[Calendar.current.component(.month, from: d) - 1] }
+    static func weekdayShort(_ d: Date) -> String { wShort[DateKey.weekday(d) - 1] }
+    static func weekdayLong(_ d: Date) -> String { wLong[DateKey.weekday(d) - 1] }
+    static func dayOfMonth(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
+
+    static func fmt(_ d: Date) -> String { "\(weekdayShort(d)), \(monthShort(d)) \(dayOfMonth(d))" }
+    static func fmtShort(_ d: Date) -> String { "\(monthShort(d)) \(dayOfMonth(d))" }
+
+    static func rangeLabel(_ s: SprintDTO) -> String {
+        let dates = s.orderedDates
+        guard let a = dates.first, let b = dates.last else { return "" }
+        let bd = DateKey.parse(b)
+        return "\(fmtShort(DateKey.parse(a))) \u{2013} \(fmtShort(bd)), \(Calendar.current.component(.year, from: bd))"
+    }
+    static func rangeShort(_ s: SprintDTO) -> String {
+        let dates = s.orderedDates
+        guard let a = dates.first, let b = dates.last else { return "" }
+        return "\(fmtShort(DateKey.parse(a))) \u{2013} \(fmtShort(DateKey.parse(b)))"
+    }
 }
