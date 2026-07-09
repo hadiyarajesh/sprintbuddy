@@ -23,7 +23,7 @@ struct SprintBuddyApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
         }
         .modelContainer(modelContainer)

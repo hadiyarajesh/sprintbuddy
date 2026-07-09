@@ -81,7 +81,7 @@ struct SidebarView: View {
 
     private var brandRow: some View {
         HStack(spacing: 11) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image("BrandIcon")
                 .resizable()
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)

@@ -16,6 +16,7 @@ import AppKit
 struct QuickEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openWindow) private var openWindow
     @Query(sort: \Sprint.createdAt, order: .reverse) private var sprints: [Sprint]
 
     @State private var draftText: String = ""
@@ -79,8 +80,9 @@ struct QuickEntryView: View {
     private func header(_ p: SBPalette) -> some View {
         let d = DateKey.parse(todayISO)
         return HStack(spacing: 10) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image("BrandIcon")
                 .resizable()
+                .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 26, height: 26)
             VStack(alignment: .leading, spacing: 1) {
@@ -183,15 +185,42 @@ struct QuickEntryView: View {
             Text("No sprint covers today")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(p.textNavy)
-            Text("Open SprintBuddy to create a sprint that includes today, then log from here.")
+            Text("Create a sprint that includes today, then log from here.")
                 .font(.system(size: 11.5))
                 .foregroundStyle(p.grey2)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+
+            Button(action: openMainApp) {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.forward.app")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Open SprintBuddy")
+                        .font(.system(size: 12.5, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.vertical, 7)
+                .padding(.horizontal, 14)
+                .background(p.blue)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
         .padding(.vertical, 22)
+    }
+
+    /// Brings the main SprintBuddy window forward (reopening it if it was
+    /// closed) and activates the app.
+    private func openMainApp() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: { $0.canBecomeMain && $0.isVisible }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(id: "main")
+        }
     }
 
     // MARK: - Save
