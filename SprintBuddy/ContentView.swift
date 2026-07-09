@@ -50,8 +50,18 @@ struct ContentView: View {
             syncSelection()
         }
         .sheet(isPresented: $appState.newSprintOpen) {
-            newSprintStub
+            NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint)
         }
+    }
+
+    /// Creates a sprint via `SprintStore`, persists it, and selects it (and
+    /// its default day) so the board renders the new sprint immediately.
+    private func createSprint(name: String, focus: String, startISO: String, weeks: Int) {
+        let created = SprintStore.createSprint(name: name, focus: focus, startISO: startISO, weeks: weeks, in: modelContext)
+        try? modelContext.save()
+        appState.selectedSprintID = created.id
+        appState.selectedDateISO = SprintMath.defaultDate(created.toDTO(), today: DateKey.iso(DateKey.today()))
+        appState.paneCollapsed = false
     }
 
     /// Keeps `appState.selectedSprintID` pointed at a real sprint: resolves to
@@ -90,18 +100,6 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Sheet stub
-
-    private var newSprintStub: some View {
-        VStack(spacing: 16) {
-            Text("New Sprint")
-                .font(.system(size: 15, weight: .semibold))
-            Button("Close") { appState.newSprintOpen = false }
-        }
-        .padding(24)
-        .frame(width: 320, height: 180)
     }
 }
 
