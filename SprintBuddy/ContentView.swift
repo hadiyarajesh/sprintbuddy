@@ -4,9 +4,9 @@
 //
 //  The app shell: a three-region layout (sidebar · board · detail) inside a
 //  hidden-title-bar window. Sidebar content landed in Task 9, board content
-//  (BoardView) in Task 10, and the detail pane lands in Task 12 — this file
-//  lays out the regions, resolves the active sprint, injects the palette,
-//  and wires the empty state.
+//  (BoardView) in Task 10, and the detail pane (DetailPane/CollapsedStrip)
+//  landed in Task 12 — this file lays out the regions, resolves the active
+//  sprint + selected day, injects the palette, and wires the empty state.
 //
 
 import SwiftUI
@@ -30,6 +30,21 @@ struct ContentView: View {
         return sprints.first
     }
 
+    /// The `Day` matching `appState.selectedDateISO` within `sprint`, falling back to
+    /// `SprintMath.defaultDate` (today if it exists in the sprint, else the first
+    /// working day, else the sprint's first day) when there's no selection or the
+    /// selected date isn't part of this sprint.
+    private func selectedDay(in sprint: Sprint) -> Day? {
+        if let iso = appState.selectedDateISO, let match = sprint.days.first(where: { $0.dateISO == iso }) {
+            return match
+        }
+        let sortedDays = sprint.days.sorted { $0.dateISO < $1.dateISO }
+        guard let defaultISO = SprintMath.defaultDate(sprint.toDTO(), today: DateKey.iso(DateKey.today())) else {
+            return sortedDays.first
+        }
+        return sortedDays.first(where: { $0.dateISO == defaultISO }) ?? sortedDays.first
+    }
+
     var body: some View {
         let p = palette
 
@@ -40,7 +55,7 @@ struct ContentView: View {
             HStack(spacing: 0) {
                 sidebarRegion(p)
                 boardRegion(p)
-                // Detail region: only shown once a sprint + day are selected (Task 12).
+                detailRegion(p)
             }
         }
         .environment(\.palette, p)
@@ -100,6 +115,34 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The right-hand detail region: only present when there is an active sprint AND a
+    /// resolved selected day. Swaps between the 388pt `DetailPane` and the 54pt
+    /// `CollapsedStrip` based on `appState.paneCollapsed`, animating the swap with a
+    /// trailing-edge slide (approximating the prototype's `sbSlideIn`).
+    @ViewBuilder
+    private func detailRegion(_ p: SBPalette) -> some View {
+        if let sprint = activeSprint, let day = selectedDay(in: sprint) {
+            Group {
+                if appState.paneCollapsed {
+                    CollapsedStrip(dateLong: detailDateLong(day), onExpand: {
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            appState.paneCollapsed = false
+                        }
+                    })
+                } else {
+                    DetailPane(sprint: sprint, day: day, appState: appState)
+                }
+            }
+            .transition(.move(edge: .trailing))
+            .animation(.easeInOut(duration: 0.22), value: appState.paneCollapsed)
+        }
+    }
+
+    private func detailDateLong(_ day: Day) -> String {
+        let d = DateKey.parse(day.dateISO)
+        return "\(SprintMath.monthLong(d)) \(SprintMath.dayOfMonth(d)), \(Calendar.current.component(.year, from: d))"
     }
 }
 
