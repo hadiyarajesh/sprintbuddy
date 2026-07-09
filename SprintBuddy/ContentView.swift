@@ -3,9 +3,10 @@
 //  SprintBuddy
 //
 //  The app shell: a three-region layout (sidebar · board · detail) inside a
-//  hidden-title-bar window. Sidebar content lands in Task 9, board content in
-//  Task 10, and the detail pane in Task 12 — this task lays out the regions,
-//  resolves the active sprint, injects the palette, and wires the empty state.
+//  hidden-title-bar window. Sidebar content landed in Task 9, board content
+//  (BoardView) in Task 10, and the detail pane lands in Task 12 — this file
+//  lays out the regions, resolves the active sprint, injects the palette,
+//  and wires the empty state.
 //
 
 import SwiftUI
@@ -77,14 +78,15 @@ struct ContentView: View {
 
     private func boardRegion(_ p: SBPalette) -> some View {
         Group {
-            if activeSprint == nil {
-                EmptyStateView(onNew: { appState.newSprintOpen = true })
+            if let sprint = activeSprint {
+                BoardView(
+                    sprint: sprint,
+                    appState: appState,
+                    onDelete: { appState.deleteOpen = true },
+                    onStandup: { appState.standupOpen = true }
+                )
             } else {
-                // Placeholder — real board grid lands in Task 10.
-                Text("Board")
-                    .font(.system(size: 13))
-                    .foregroundStyle(p.grey2)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyStateView(onNew: { appState.newSprintOpen = true })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
