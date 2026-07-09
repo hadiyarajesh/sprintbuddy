@@ -87,6 +87,9 @@ struct DayCell: View {
             borderColor = p.blue
             borderWidth = 2
             dashed = false
+            // Prototype (buildCells:942-943) REPLACES the ambient shadow with the
+            // focus ring on selection — a selected cell shows only the ring.
+            showShadow = false
             if working {
                 bg = p.todayBg
                 labelColor = p.blue
