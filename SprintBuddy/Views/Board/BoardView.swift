@@ -25,6 +25,9 @@ struct BoardView: View {
         let dto = sprint.toDTO()
         let today = DateKey.iso(DateKey.today())
 
+        // Padding lives INSIDE the ScrollView so the scroll view clips to the
+        // full region, not to the content's edges — otherwise the overview
+        // card's soft drop shadow gets sliced into hard lines at the top/sides.
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 OverviewCard(sprint: sprint, dto: dto, today: today, onDelete: onDelete, onStandup: onStandup)
@@ -32,9 +35,9 @@ struct BoardView: View {
             }
             .frame(maxWidth: 1000, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 26)
+            .padding(.horizontal, 30)
         }
-        .padding(.vertical, 26)
-        .padding(.horizontal, 30)
     }
 }
 

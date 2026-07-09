@@ -150,8 +150,9 @@ struct QuickEntryView: View {
                     TypeChipButton(type: t, isSelected: draftType == t, action: { draftType = t })
                 }
                 Spacer(minLength: 0)
-                saveButton(p)
             }
+
+            saveButton(p)
         }
         .padding(16)
     }
@@ -163,10 +164,12 @@ struct QuickEntryView: View {
                     .font(.system(size: 11, weight: .semibold))
                 Text(justSaved ? "Saved" : "Save")
                     .font(.system(size: 12.5, weight: .semibold))
+                    .lineLimit(1)
+                    .fixedSize()
             }
             .foregroundStyle(.white)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
             .background(justSaved ? p.success : p.blue)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
