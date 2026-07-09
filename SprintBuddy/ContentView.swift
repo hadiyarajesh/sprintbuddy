@@ -86,6 +86,7 @@ struct ContentView: View {
             ImportWarningSheet(
                 currentCount: sprints.count,
                 pendingCount: appState.pendingImport?.count ?? 0,
+                pendingNames: appState.pendingImport?.map(\.name) ?? [],
                 onCancel: {
                     appState.pendingImport = nil
                     appState.importWarnOpen = false

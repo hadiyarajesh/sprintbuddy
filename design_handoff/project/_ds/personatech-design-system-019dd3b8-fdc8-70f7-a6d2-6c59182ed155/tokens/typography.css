@@ -1,0 +1,50 @@
+/* ============================================================
+   Personatech — Typography Tokens
+   Type scale + family stacks from phoenix-fe _theme_constant.scss.
+   Admin/console base family is Roboto; Inter & Lato available.
+   ============================================================ */
+
+:root {
+  /* ---- Families ------------------------------------------------ */
+  --font-base: "Roboto", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-ui: "Inter", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Lato", "Inter", "Roboto", sans-serif;
+
+  /* legacy aliases (mirror --font-regular / --font-bold in source) */
+  --font-regular: var(--font-base);
+  --font-bold: var(--font-base);
+
+  /* ---- Type scale (px, verbatim from source) ------------------- */
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 13px;   /* admin body default */
+  --text-md: 14px;
+  --text-std: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 30px;
+  --text-5xl: 36px;
+  --text-6xl: 48px;
+  --text-7xl: 60px;
+  --text-8xl: 72px;
+
+  /* ---- Weights ------------------------------------------------- */
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Line heights -------------------------------------------- */
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+
+  /* ---- Semantic roles ------------------------------------------ */
+  --text-body: var(--text-base);
+  --text-label: var(--text-md);
+  --text-page-title: var(--text-3xl);
+  --text-section-title: var(--text-xl);
+}

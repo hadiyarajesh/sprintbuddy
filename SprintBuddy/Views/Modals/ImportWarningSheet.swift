@@ -15,6 +15,7 @@ import SwiftUI
 struct ImportWarningSheet: View {
     let currentCount: Int
     let pendingCount: Int
+    var pendingNames: [String] = []
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
@@ -27,6 +28,7 @@ struct ImportWarningSheet: View {
         VStack(alignment: .leading, spacing: 18) {
             header
             body_
+            if !pendingNames.isEmpty { pendingList }
             footer
         }
         .padding(24)
@@ -56,6 +58,30 @@ struct ImportWarningSheet: View {
         .foregroundStyle(palette.textNavy)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Lists the sprints found in the file being imported, so the count in the
+    /// warning above is never mysterious.
+    private var pendingList: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Will import:")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(palette.grey2)
+            ForEach(Array(pendingNames.enumerated()), id: \.offset) { _, name in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Circle().fill(palette.blue).frame(width: 4, height: 4).offset(y: -2)
+                    Text(name)
+                        .font(.system(size: 12))
+                        .foregroundStyle(palette.textNavy)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(palette.inputSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     // MARK: - Footer

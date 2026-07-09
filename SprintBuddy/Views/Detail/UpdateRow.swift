@@ -20,7 +20,6 @@ struct UpdateRow: View {
     @Environment(\.palette) private var palette
     @State private var isEditing = false
     @State private var editText: String = ""
-    @State private var editType: UpdateType = .done
 
     var body: some View {
         Group {
@@ -74,10 +73,7 @@ struct UpdateRow: View {
                         .strokeBorder(palette.grey6, lineWidth: 1)
                 )
 
-            HStack(spacing: 5) {
-                ForEach([UpdateType.done, .doing, .blocker], id: \.self) { t in
-                    TypeChipButton(type: t, isSelected: editType == t, action: { editType = t })
-                }
+            HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 cancelButton
                 saveButton
@@ -117,7 +113,6 @@ struct UpdateRow: View {
 
     private func startEdit() {
         editText = update.text
-        editType = update.type
         isEditing = true
     }
 
@@ -127,12 +122,12 @@ struct UpdateRow: View {
 
     /// Saving an emptied draft deletes the update (matches the prototype's
     /// `onSaveEdit`, which filters the update out rather than persisting blank text).
+    /// The update's type is left unchanged — it's not editable inline.
     private func saveEdit() {
         let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             onDelete()
         } else {
-            update.type = editType
             update.text = trimmed
         }
         isEditing = false

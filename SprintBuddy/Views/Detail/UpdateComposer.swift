@@ -49,21 +49,19 @@ struct UpdateComposer: View {
                 .foregroundStyle(palette.textNavy)
                 .scrollContentBackground(.hidden)
                 .padding(6)
-                // Prototype's onDraftKey: Cmd/Ctrl+Enter submits the draft (line 1138).
+                // ⌘+Enter submits the draft.
                 .onKeyPress(.return, phases: .down) { press in
-                    guard press.modifiers.contains(.command) || press.modifiers.contains(.control) else {
-                        return .ignored
-                    }
+                    guard press.modifiers.contains(.command) else { return .ignored }
                     if canAdd { onAdd() }
                     return .handled
                 }
 
             if draftText.isEmpty {
-                Text("What did you work on? (\u{2318} / Ctrl + Enter to add)")
+                Text("What did you work on? (\u{2318} + Enter to add)")
                     .font(.system(size: 13))
                     .foregroundStyle(palette.grey4)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 14)
+                    .padding(.horizontal, 11)
+                    .padding(.top, 8)
                     .allowsHitTesting(false)
             }
         }

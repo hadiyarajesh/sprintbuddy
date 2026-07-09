@@ -1,0 +1,56 @@
+/* ============================================================
+   Personatech — Webfonts
+   Inter (product UI), Lato (legacy admin display), Roboto (admin base)
+   Real font binaries shipped from /assets/fonts.
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&display=swap");
+
+/* ---- Inter ---------------------------------------------------- */
+@font-face {
+  font-family: "Inter";
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: local("Inter Light"), local("Inter-Light"),
+    url("../assets/fonts/Inter-Light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: local("Inter Regular"), local("Inter-Regular"),
+    url("../assets/fonts/Inter-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: local("Inter Medium"), local("Inter-Medium"),
+    url("../assets/fonts/Inter-Medium.woff2") format("woff2");
+}
+
+/* ---- Lato ----------------------------------------------------- */
+@font-face {
+  font-family: "Lato";
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/lato_light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Lato";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/lato_regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Lato";
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/lato_bold.woff2") format("woff2");
+}
