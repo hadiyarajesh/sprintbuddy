@@ -9,9 +9,12 @@
 //  Transcribed from design_handoff/project/ScrumBuddy.dc.html lines ~77-201
 //  (`<aside data-screen-label="Sidebar">`).
 //
-//  Note: the Settings/Help footer buttons here only toggle
-//  `appState.settingsOpen` / `helpOpen` — the popover *content* for both is
-//  built in a later task, so no `.popover` is attached yet.
+//  The Settings/Help footer buttons toggle `appState.settingsOpen` /
+//  `helpOpen`, each driving a `.popover` (SettingsPopover / HelpPopover,
+//  Task 13). `onExport`/`onImport` are optional closures forwarded to
+//  `SettingsPopover`'s Data section — they default to no-ops here; Task 14
+//  supplies the real NSSavePanel/NSOpenPanel-backed implementations from
+//  `ContentView`.
 //
 
 import SwiftUI
@@ -21,6 +24,8 @@ struct SidebarView: View {
     let sprints: [Sprint]
     @ObservedObject var appState: AppState
     let onNewSprint: () -> Void
+    var onExport: () -> Void = {}
+    var onImport: () -> Void = {}
 
     @Environment(\.palette) private var palette
     @State private var isHoveringNewSprint = false
@@ -181,8 +186,15 @@ struct SidebarView: View {
             SidebarFooterButton(systemName: "gearshape", title: "Settings") {
                 appState.settingsOpen.toggle()
             }
+            .popover(isPresented: $appState.settingsOpen, arrowEdge: .bottom) {
+                SettingsPopover(appState: appState, onExport: onExport, onImport: onImport)
+            }
+
             SidebarFooterButton(systemName: "questionmark.circle", title: "Help") {
                 appState.helpOpen.toggle()
+            }
+            .popover(isPresented: $appState.helpOpen, arrowEdge: .bottom) {
+                HelpPopover()
             }
         }
         .padding(.horizontal, 14)
