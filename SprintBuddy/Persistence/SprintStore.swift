@@ -5,7 +5,7 @@ struct SprintStore {
     @discardableResult
     static func createSprint(name: String, focus: String, startISO: String, weeks: Int,
                              in context: ModelContext) -> Sprint {
-        let dto = SprintDTO(id: "s\(Int(Date().timeIntervalSince1970 * 1000))",
+        let dto = SprintDTO(id: "s-\(UUID().uuidString)",
                             name: name, description: focus, start: startISO, weeks: weeks,
                             days: SprintMath.generateDays(start: startISO, weeks: weeks))
         let sprint = Sprint.from(dto)
@@ -20,6 +20,13 @@ struct SprintStore {
     }
 
     static func exportData(_ sprints: [Sprint]) -> Data {
-        ScrumBuddyCodec.encode(sprints.map { $0.toDTO() })
+        // Defensive: never write duplicate sprint ids into the export file, so a
+        // corrupted/duplicated store can't produce an inflated import count.
+        var seen = Set<String>()
+        let unique = sprints.compactMap { sprint -> SprintDTO? in
+            guard seen.insert(sprint.id).inserted else { return nil }
+            return sprint.toDTO()
+        }
+        return ScrumBuddyCodec.encode(unique)
     }
 }

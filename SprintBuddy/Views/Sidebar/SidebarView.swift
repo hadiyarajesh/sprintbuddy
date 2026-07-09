@@ -161,19 +161,15 @@ struct SidebarView: View {
             HStack(spacing: 6) {
                 Image(systemName: "plus")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(palette.grey2)
                 Text("New Sprint")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(palette.textNavy)
             }
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(isHoveringNewSprint ? palette.hover : Color.clear)
+            .background(palette.blue.opacity(isHoveringNewSprint ? 0.9 : 1))
             .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(palette.grey6, lineWidth: 1)
-            )
+            .shadow(color: Color.rgba(42, 118, 225, 0.35), radius: 8, x: 0, y: 3)
         }
         .buttonStyle(.plain)
         .onHover { isHoveringNewSprint = $0 }

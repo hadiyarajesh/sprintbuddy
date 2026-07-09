@@ -1,0 +1,66 @@
+/* ============================================================
+   Personatech — Spacing, Radius, Shadow & Layout Tokens
+   Derived from phoenix-fe _theme.scss, _theme_constant.scss,
+   layout.scss, button.scss & table.scss.
+   The product uses a tight, functional 4px-based rhythm.
+   ============================================================ */
+
+:root {
+  /* ---- Spacing scale (4px base) -------------------------------- */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 24px;
+  --space-8: 30px;
+  --space-9: 50px;     /* --gutter (reg) */
+
+  /* ---- Form gutter (responsive 2-col forms) -------------------- */
+  --gutter: 16px;      /* admin */
+  --gutter-reg: 50px;
+
+  /* ---- Radius -------------------------------------------------- */
+  --radius-xs: 2px;    /* reg form fields */
+  --radius-sm: 3px;    /* checkboxes */
+  --radius-md: 4px;    /* buttons, admin inputs, dropdowns */
+  --radius-lg: 6px;    /* cards */
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+  --form-radius: var(--radius-md);
+
+  /* ---- Control sizing ------------------------------------------ */
+  --control-height: 34px;       /* admin form field height */
+  --control-height-reg: 40px;   /* reg form field height */
+
+  /* ---- Layout chrome ------------------------------------------- */
+  --header-height: 52px;
+  --sidenav-width: 270px;
+  --reg-header-height: 60px;
+  --container-lg: 60%;
+  --container-md: 80%;
+
+  /* ---- Shadows (verbatim) -------------------------------------- */
+  --shadow-card-1: rgb(0 0 0 / 9%) 0px 0px 6px, rgb(0 0 0 / 20%) 0px 3px 6px;
+  --shadow-card-2: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  --shadow-card-3: rgb(67 71 85 / 27%) 0px 0px 0.25em, rgb(90 125 188 / 0%) 0px 0.25em 1em;
+  --shadow-dropdown: rgba(9, 30, 66, 0.25) 0px 4px 8px -2px, rgba(9, 30, 66, 0.31) 0px 0px 1px 0px;
+  --shadow-table: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
+  --shadow-user-menu: 0px 2px 12px 0px rgba(0, 0, 0, 0.2);
+  --shadow-form-box: 0px 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-btn-hover: 0 10px 10px -8px rgba(0, 0, 0, 0.25);
+  --shadow-icon-btn-hover: 0 1px 4px 0 rgba(0, 0, 0, 0.2);
+  --focus-shadow: 0 0 6px 0 rgba(38, 50, 113, 0.2);
+
+  /* ---- Motion -------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.455, 0.03, 0.515, 0.955); /* @kind other */
+  --transition-fast: 0.2s; /* @kind other */
+  --transition-base: 0.5s; /* @kind other */
+
+  /* ---- Z-index ladder ------------------------------------------ */
+  --z-header: 104; /* @kind other */
+  --z-overlay: 102; /* @kind other */
+  --z-dropdown: 100; /* @kind other */
+}

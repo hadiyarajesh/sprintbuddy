@@ -87,6 +87,16 @@ struct NewSprintSheet: View {
             DatePicker("", selection: $startDate, displayedComponents: [.date])
                 .datePickerStyle(.field)
                 .labelsHidden()
+                .font(.system(size: 13))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 7)
+                .padding(.horizontal, 11)
+                .background(palette.inputSoft)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                        .strokeBorder(palette.border2, lineWidth: 1)
+                )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -101,6 +111,18 @@ struct NewSprintSheet: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .buttonStyle(.borderless)
+            .font(.system(size: 13))
+            .tint(palette.textNavy)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .background(palette.inputSoft)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                    .strokeBorder(palette.border2, lineWidth: 1)
+            )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -141,17 +163,31 @@ struct NewSprintSheet: View {
     private var previewLine: some View {
         let s = DateKey.parse(startISO)
         let end = DateKey.addDays(s, weeks * 7 - 1)
-        let text = "Creates \(weeks * 7) day cards \u{00b7} \(SprintMath.fmt(s)) \u{2013} \(SprintMath.fmt(end)). Weekends are marked automatically."
+        let rows = [
+            "Creates \(weeks * 7) day cards",
+            "\(SprintMath.fmt(s)) \u{2013} \(SprintMath.fmt(end))",
+            "Weekends are marked automatically",
+        ]
 
-        return Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(palette.grey2)
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .background(palette.blueTint)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        return VStack(alignment: .leading, spacing: 5) {
+            ForEach(rows, id: \.self) { row in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Circle()
+                        .fill(palette.blue)
+                        .frame(width: 4, height: 4)
+                        .offset(y: -2)
+                    Text(row)
+                        .font(.system(size: 12))
+                        .foregroundStyle(palette.grey2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 11)
+        .padding(.horizontal, 12)
+        .background(palette.blueTint)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     // MARK: - Footer

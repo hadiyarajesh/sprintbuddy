@@ -152,22 +152,21 @@ struct DayCell: View {
 
     private func header(_ s: Style) -> some View {
         HStack(alignment: .top, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(dateStr)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(s.labelColor)
-                Text(weekdayStr)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(palette.grey3)
-                if isToday {
-                    Text("TODAY")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(0.4)
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 1)
-                        .padding(.horizontal, 6)
-                        .background(palette.blue)
-                        .clipShape(Capsule())
+            // When the pane is open the cells get narrow; keep the date/weekday/TODAY
+            // pill from breaking mid-word by picking a one-line layout when it fits and
+            // dropping the TODAY pill to a second line (as a whole) when it doesn't.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    dateText(s)
+                    weekdayText
+                    todayPill
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        dateText(s)
+                        weekdayText
+                    }
+                    todayPill
                 }
             }
             Spacer(minLength: 0)
@@ -177,6 +176,38 @@ struct DayCell: View {
                     .frame(width: 9, height: 9)
                     .padding(.top, 3)
             }
+        }
+    }
+
+    private func dateText(_ s: Style) -> some View {
+        Text(dateStr)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(s.labelColor)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    private var weekdayText: some View {
+        Text(weekdayStr)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(palette.grey3)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    @ViewBuilder
+    private var todayPill: some View {
+        if isToday {
+            Text("TODAY")
+                .font(.system(size: 9, weight: .bold))
+                .tracking(0.4)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.vertical, 1)
+                .padding(.horizontal, 6)
+                .background(palette.blue)
+                .clipShape(Capsule())
         }
     }
 
@@ -208,8 +239,9 @@ struct DayCell: View {
                     Text(update.text)
                         .font(.system(size: 12))
                         .foregroundStyle(palette.textNavy)
-                        .lineLimit(1)
+                        .lineLimit(2)
                         .truncationMode(.tail)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             if day.updates.count > 3 {

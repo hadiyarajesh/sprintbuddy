@@ -73,6 +73,20 @@ struct DetailPane: View {
         .overlay(alignment: .leading) {
             Rectangle().fill(palette.border).frame(width: 1)
         }
+        // In-window status dropdown: a transparent catcher dismisses it on an
+        // outside tap; the menu is positioned just under the header chip.
+        .overlay(alignment: .topTrailing) {
+            if appState.statusMenuOpen {
+                ZStack(alignment: .topTrailing) {
+                    Color.white.opacity(0.001)
+                        .contentShape(Rectangle())
+                        .onTapGesture { appState.statusMenuOpen = false }
+                    statusMenuContent
+                        .padding(.top, 62)
+                        .padding(.trailing, 24)
+                }
+            }
+        }
         .overlay(alignment: .topLeading) {
             collapseButton
                 .offset(x: -13, y: 28)
@@ -150,11 +164,11 @@ struct DetailPane: View {
         }
         .buttonStyle(.plain)
         .help("Change day status")
-        .popover(isPresented: $appState.statusMenuOpen, arrowEdge: .top) {
-            statusMenuContent
-        }
     }
 
+    /// The status dropdown, rendered as an in-window overlay (not a native
+    /// popover) so it always stays within the app window. Carries its own
+    /// card chrome since there's no popover frame around it.
     private var statusMenuContent: some View {
         VStack(spacing: 2) {
             statusMenuItem(.working, icon: "pencil", label: "Working", color: palette.blue)
@@ -166,6 +180,13 @@ struct DetailPane: View {
         }
         .padding(6)
         .frame(width: 172)
+        .background(palette.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(palette.border2, lineWidth: 1)
+        )
+        .shadow(color: Color.rgba(19, 19, 76, 0.28), radius: 16, x: 0, y: 8)
     }
 
     private func statusMenuItem(_ status: DayStatus, icon: String, label: String, color: Color) -> some View {
@@ -289,11 +310,11 @@ struct DetailPane: View {
                     .padding(6)
 
                 if day.privateNote.isEmpty {
-                    Text("Private reminders \u{2014} never shown on the board or in exports")
+                    Text("Private reminders \u{2014} never shown on the board or in standup notes")
                         .font(.system(size: 13))
                         .foregroundStyle(palette.grey4)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, 11)
+                        .padding(.top, 8)
                         .allowsHitTesting(false)
                 }
             }

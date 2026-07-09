@@ -1,0 +1,39 @@
+/* ============================================================
+   Personatech — Base / Reset
+   Light normalization + product defaults. Mirrors the spirit of
+   phoenix-fe _reset.scss without forcing it on every consumer.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-base);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-default);
+  background-color: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Personatech custom icons (window.PTIcon) render at 1em, currentColor */
+svg {
+  vertical-align: middle;
+}
