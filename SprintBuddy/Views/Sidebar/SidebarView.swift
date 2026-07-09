@@ -18,6 +18,7 @@
 //
 
 import SwiftUI
+import AppKit
 import SwiftData
 
 struct SidebarView: View {
@@ -80,21 +81,12 @@ struct SidebarView: View {
 
     private var brandRow: some View {
         HStack(spacing: 11) {
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(hex: "2a76e1"), Color(hex: "153a71")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 38, height: 38)
-                .overlay {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(.white)
-                }
-                .shadow(color: Color(hex: "2a76e1").opacity(0.45), radius: 8, x: 0, y: 4)
+            Image("BrandIcon")
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 40, height: 40)
+                .shadow(color: Color(hex: "2a76e1").opacity(0.3), radius: 7, x: 0, y: 3)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("SprintBuddy")
