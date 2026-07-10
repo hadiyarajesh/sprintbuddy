@@ -13,27 +13,11 @@ import SwiftUI
 import SwiftData
 import SprintBuddyKit
 import AppKit
-import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let agentBundleID = "com.hadiyarajesh.SprintBuddyMenuBar"
-
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Register the embedded helper to launch at login (idempotent).
-        try? SMAppService.loginItem(identifier: agentBundleID).register()
-        launchAgentIfNeeded()
-    }
-
-    /// Starts the embedded agent now (so the menu bar appears without waiting
-    /// for the next login), without stealing focus from the main window.
-    private func launchAgentIfNeeded() {
-        guard NSRunningApplication.runningApplications(withBundleIdentifier: agentBundleID).isEmpty else { return }
-        let agentURL = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Library/LoginItems/SprintBuddyMenuBar.app")
-        guard FileManager.default.fileExists(atPath: agentURL.path) else { return }
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = false
-        NSWorkspace.shared.openApplication(at: agentURL, configuration: config)
+        // Register + launch the menu-bar agent if "Show in Menu Bar" is on.
+        AgentController.syncOnLaunch()
     }
 }
 

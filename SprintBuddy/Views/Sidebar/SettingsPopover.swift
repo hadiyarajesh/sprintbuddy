@@ -38,6 +38,18 @@ struct SettingsPopover: View {
     var onImport: () -> Void = {}
 
     @Environment(\.palette) private var palette
+    @State private var showInMenuBar = AgentController.isEnabled
+
+    /// Registers/launches or unregisters/quits the menu-bar agent.
+    private var menuBarBinding: Binding<Bool> {
+        Binding(
+            get: { showInMenuBar },
+            set: { newValue in
+                showInMenuBar = newValue
+                AgentController.setEnabled(newValue)
+            }
+        )
+    }
 
     private static let themes: [(value: String, label: String)] = [
         ("auto", "Auto"),
@@ -56,6 +68,11 @@ struct SettingsPopover: View {
                 .padding(.bottom, 2)
             toggleRow(title: "Show weekends", isOn: $appState.showWeekends)
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
+
+            sectionLabel("Menu Bar")
+                .padding(.top, 12)
+                .padding(.bottom, 2)
+            toggleRow(title: "Show in Menu Bar", isOn: menuBarBinding)
 
             sectionLabel("Data")
                 .padding(.top, 12)
@@ -136,8 +153,8 @@ struct SettingsPopover: View {
 
     private var dataButtons: some View {
         HStack(spacing: 8) {
-            DataActionButton(systemName: "square.and.arrow.up", label: "Export", action: onExport)
             DataActionButton(systemName: "square.and.arrow.down", label: "Import", action: onImport)
+            DataActionButton(systemName: "square.and.arrow.up", label: "Export", action: onExport)
         }
     }
 

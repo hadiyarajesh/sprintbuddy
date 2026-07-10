@@ -23,6 +23,7 @@ struct QuickEntryView: View {
     @State private var savedResetTask: Task<Void, Never>?
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
+    @State private var recapExpanded = AppGroup.defaults.bool(forKey: "recapEnabled")
 
     private var todayISO: String { DateKey.iso(DateKey.today()) }
 
@@ -119,6 +120,9 @@ struct QuickEntryView: View {
 
             Divider().overlay(p.border)
             recapSettings(p)
+
+            Divider().overlay(p.border)
+            quitRow(p)
         }
         .frame(width: 320)
         .background(p.white)
@@ -271,30 +275,67 @@ struct QuickEntryView: View {
     // MARK: - Recap settings
 
     private func recapSettings(_ p: SBPalette) -> some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 0) {
-                Text("Daily recap")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(p.textNavy)
-                Spacer(minLength: 8)
-                SBToggle(isOn: recapToggle)
-            }
-            if recapEnabled {
-                HStack(spacing: 0) {
-                    Text("Remind me at")
-                        .font(.system(size: 12))
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { recapExpanded.toggle() }
+            } label: {
+                HStack(spacing: 7) {
+                    Text("DAILY RECAP")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.4)
                         .foregroundStyle(p.grey2)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(p.grey3)
+                        .rotationEffect(.degrees(recapExpanded ? 0 : -90))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if recapExpanded {
+                HStack(spacing: 0) {
+                    Text("Remind me daily")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(p.textNavy)
                     Spacer(minLength: 8)
-                    DatePicker("", selection: recapTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.field)
-                        .labelsHidden()
-                        .font(.system(size: 12))
-                        .fixedSize()
+                    SBToggle(isOn: recapToggle)
+                }
+                if recapEnabled {
+                    HStack(spacing: 0) {
+                        Text("at")
+                            .font(.system(size: 12))
+                            .foregroundStyle(p.grey2)
+                        Spacer(minLength: 8)
+                        DatePicker("", selection: recapTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.field)
+                            .labelsHidden()
+                            .font(.system(size: 12))
+                            .fixedSize()
+                    }
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private func quitRow(_ p: SBPalette) -> some View {
+        Button { NSApp.terminate(nil) } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "power")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Quit SprintBuddy")
+                    .font(.system(size: 12.5, weight: .medium))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(p.grey1)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     // MARK: - Empty state (today isn't in any sprint)
