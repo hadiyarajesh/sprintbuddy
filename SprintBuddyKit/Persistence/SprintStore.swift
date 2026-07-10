@@ -2,10 +2,14 @@ import Foundation
 import SwiftData
 
 public struct SprintStore {
-    /// Save the context, logging (rather than silently swallowing) any failure.
+    /// Save the context, logging (rather than silently swallowing) any failure,
+    /// and signal the other process so its UI picks up the change. No
+    /// `hasChanges` guard: SwiftData's autosave may have already persisted the
+    /// mutation, and the signal must still go out.
     public static func save(_ context: ModelContext) {
         do {
             try context.save()
+            DataSync.postDidSave()
         } catch {
             NSLog("[SprintBuddy] ModelContext save failed: \(error)")
         }

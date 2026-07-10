@@ -26,26 +26,36 @@ func openMainApp() {
 }
 
 final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
-    /// Shared store, used both by the MenuBarExtra scene and to compute recap content.
-    let container = AppStore.container()
-
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         // Login registration is owned by the main app (it registers this
         // embedded helper via SMAppService.loginItem).
-        rescheduleRecap()
+        MainActor.assumeIsolated {
+            // When the main app saves, StoreRefresher reloads our container —
+            // recompute the recap from the fresh data too.
+            StoreRefresher.shared.onReload = { [weak self] in self?.rescheduleRecap() }
+            rescheduleRecap()
+        }
         NotificationCenter.default.addObserver(
             self, selector: #selector(appBecameActive),
             name: NSApplication.didBecomeActiveNotification, object: nil
         )
     }
 
-    @objc private func appBecameActive() { rescheduleRecap() }
+    @objc private func appBecameActive() {
+        MainActor.assumeIsolated {
+            // Opening the panel activates the agent: apply any reload deferred
+            // while the panel was open, then refresh the recap.
+            StoreRefresher.shared.reloadIfNeeded()
+            rescheduleRecap()
+        }
+    }
 
     /// Recompute the notification content from the shared store.
     @MainActor
     private func rescheduleRecap() {
-        let sprints = (try? container.mainContext.fetch(FetchDescriptor<Sprint>())) ?? []
+        let context = StoreRefresher.shared.container.mainContext
+        let sprints = (try? context.fetch(FetchDescriptor<Sprint>())) ?? []
         RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
     }
 
@@ -66,11 +76,13 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
 @main
 struct SprintBuddyMenuBarApp: App {
     @NSApplicationDelegateAdaptor(MenuBarAppDelegate.self) private var delegate
+    @StateObject private var store = StoreRefresher.shared
 
     var body: some Scene {
         MenuBarExtra("SprintBuddy", systemImage: "checklist") {
             QuickEntryView()
-                .modelContainer(delegate.container)
+                .id(store.generation)
+                .modelContainer(store.container)
         }
         .menuBarExtraStyle(.window)
     }
