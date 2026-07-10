@@ -140,8 +140,13 @@ struct DayCell: View {
                     .padding(-3)
             }
         }
-        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.05) : .clear, radius: 2, x: 0, y: 1)
-        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.16) : .clear, radius: 6, x: 0, y: 4)
+        // The prototype's cell shadow uses a negative spread (`0 10px 22px -16px`)
+        // to stay tucked below the card. SwiftUI has no spread, so a plain
+        // `radius: 6` shadow bled ~6px sideways and met the neighbor's shadow
+        // across the 12pt gutter, making cards look attached. Keep the radius
+        // small (well under half the gutter) and push it downward instead.
+        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.04) : .clear, radius: 1, x: 0, y: 1)
+        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.12) : .clear, radius: 4, x: 0, y: 5)
         .offset(y: isHovering ? -3 : 0)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }
