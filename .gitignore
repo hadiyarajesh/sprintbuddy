@@ -1,6 +1,9 @@
 # Build output (created by scripts/build_unsigned_dmg.sh)
 build/
 
+# Distributables — shipped via GitHub Releases, not committed
+*.dmg
+
 # Xcode
 DerivedData/
 *.xcuserstate
