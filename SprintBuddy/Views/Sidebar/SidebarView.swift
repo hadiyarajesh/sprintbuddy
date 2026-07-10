@@ -152,7 +152,8 @@ struct SidebarView: View {
     private func select(_ sprint: Sprint) {
         appState.selectedSprintID = sprint.id
         appState.selectedDateISO = SprintMath.defaultDate(sprint.toDTO(), today: todayISO)
-        appState.paneCollapsed = false
+        // Selecting a sprint no longer forces the detail pane open; it keeps
+        // whatever collapsed/expanded state the user last chose.
     }
 
     // MARK: - New Sprint

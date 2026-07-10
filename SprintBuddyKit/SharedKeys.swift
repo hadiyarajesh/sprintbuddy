@@ -31,4 +31,5 @@ public enum PrefKey {
     public static let paneCollapsed = "paneCollapsed"
     public static let activeOpen = "activeOpen"
     public static let archiveOpen = "archiveOpen"
+    public static let autoOpenDetail = "autoOpenDetail"
 }

@@ -46,6 +46,11 @@ final class AppState: ObservableObject {
     @Published var highlightUnlogged: Bool {
         didSet { defaults.set(highlightUnlogged, forKey: PrefKey.highlightUnlogged) }
     }
+    /// When on, selecting a day card opens the detail pane; when off, the pane
+    /// only opens via the collapsed opener strip.
+    @Published var autoOpenDetail: Bool {
+        didSet { defaults.set(autoOpenDetail, forKey: PrefKey.autoOpenDetail) }
+    }
 
     // MARK: - Sheet / popover flags (transient, not persisted)
 
@@ -74,6 +79,7 @@ final class AppState: ObservableObject {
         theme = d.string(forKey: PrefKey.theme) ?? "auto"
         showWeekends = (d.object(forKey: PrefKey.showWeekends) as? Bool) ?? true
         highlightUnlogged = (d.object(forKey: PrefKey.highlightUnlogged) as? Bool) ?? true
+        autoOpenDetail = (d.object(forKey: PrefKey.autoOpenDetail) as? Bool) ?? true
     }
 
     // MARK: - Derived

@@ -68,6 +68,7 @@ struct SettingsPopover: View {
                 .padding(.bottom, 2)
             toggleRow(title: "Show weekends", isOn: $appState.showWeekends)
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
+            toggleRow(title: "Auto-open details pane", isOn: $appState.autoOpenDetail)
 
             sectionLabel("Menu Bar")
                 .padding(.top, 12)
