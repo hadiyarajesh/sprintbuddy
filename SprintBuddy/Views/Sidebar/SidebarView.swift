@@ -94,7 +94,7 @@ struct SidebarView: View {
                     .font(.system(size: 18, weight: .bold))
                     .tracking(-0.2)
                     .foregroundStyle(palette.blue)
-                Text("v2.4.0")
+                Text(AppInfo.displayVersion)
                     .font(.system(size: 11))
                     .foregroundStyle(palette.grey3)
             }

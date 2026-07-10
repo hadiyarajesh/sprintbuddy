@@ -147,14 +147,14 @@ struct ContentView: View {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = try? Data(contentsOf: url) else {
-            showImportError("Couldn’t read that file.")
+            showImportError(String(localized: "Couldn’t read that file."))
             return
         }
         switch SprintBuddyCodec.decode(data) {
         case .failure(.notJSON):
-            showImportError("That file isn’t valid JSON.")
+            showImportError(String(localized: "That file isn’t valid JSON."))
         case .failure(.notSprintBuddy):
-            showImportError("This doesn’t look like a SprintBuddy export.")
+            showImportError(String(localized: "This doesn’t look like a SprintBuddy export."))
         case .success(let dtos):
             if sprints.isEmpty {
                 applyImport(dtos)
