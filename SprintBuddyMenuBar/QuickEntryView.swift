@@ -21,6 +21,7 @@ struct QuickEntryView: View {
     @State private var draftType: UpdateType = .done
     @State private var justSaved = false
     @State private var savedResetTask: Task<Void, Never>?
+    @State private var typeMenuOpen = false
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
     @State private var recapExpanded = AppGroup.defaults.bool(forKey: "recapEnabled")
@@ -128,6 +129,21 @@ struct QuickEntryView: View {
         }
         .frame(width: 320)
         .background(p.white)
+        .overlayPreferenceValue(TypeAnchorKey.self) { anchor in
+            GeometryReader { proxy in
+                if typeMenuOpen, let anchor {
+                    let rect = proxy[anchor]
+                    ZStack(alignment: .topLeading) {
+                        Color.white.opacity(0.001)
+                            .contentShape(Rectangle())
+                            .onTapGesture { typeMenuOpen = false }
+                        typeMenuContent(p)
+                            .fixedSize()
+                            .offset(x: rect.minX, y: rect.maxY + 4)
+                    }
+                }
+            }
+        }
         .environment(\.palette, p)
         .preferredColorScheme(themeRaw == "auto" ? nil : effectiveScheme)
         .onAppear {
@@ -208,7 +224,7 @@ struct QuickEntryView: View {
             )
 
             HStack(spacing: 8) {
-                typeMenu(p)
+                typeChip(p)
                 Spacer(minLength: 0)
                 saveButton(p)
             }
@@ -216,18 +232,65 @@ struct QuickEntryView: View {
         .padding(16)
     }
 
-    /// Compact Done/Doing/Blocker picker (native dropdown) so it fits on the
-    /// Save row. Tinted to the selected type's color.
-    private func typeMenu(_ p: SBPalette) -> some View {
-        Picker("", selection: $draftType) {
+    /// The type chip (colored pill) that toggles the in-window dropdown, mirroring
+    /// the day-detail status chip. Publishes its bounds so the dropdown anchors to it.
+    private func typeChip(_ p: SBPalette) -> some View {
+        let color = UpdateMeta.color(draftType, p)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) { typeMenuOpen.toggle() }
+        } label: {
+            HStack(spacing: 5) {
+                Circle().fill(color).frame(width: 7, height: 7)
+                Text(UpdateMeta.label(draftType))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(color)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(color.opacity(0.7))
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(UpdateMeta.tint(draftType, p))
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(color, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .anchorPreference(key: TypeAnchorKey.self, value: .bounds) { $0 }
+    }
+
+    /// The dropdown list (dot + label + checkmark), with its own card chrome.
+    private func typeMenuContent(_ p: SBPalette) -> some View {
+        VStack(spacing: 2) {
             ForEach([UpdateType.done, .doing, .blocker], id: \.self) { t in
-                Text(UpdateMeta.label(t)).tag(t)
+                Button {
+                    draftType = t
+                    typeMenuOpen = false
+                } label: {
+                    HStack(spacing: 9) {
+                        Circle().fill(UpdateMeta.color(t, p)).frame(width: 7, height: 7)
+                        Text(UpdateMeta.label(t))
+                            .font(.system(size: 13))
+                            .foregroundStyle(p.textNavy)
+                        Spacer(minLength: 0)
+                        if draftType == t {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(p.blue)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
-        .labelsHidden()
-        .pickerStyle(.menu)
-        .tint(UpdateMeta.color(draftType, p))
-        .fixedSize()
+        .padding(6)
+        .frame(width: 150)
+        .background(p.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(p.border2, lineWidth: 1))
+        .shadow(color: Color.rgba(19, 19, 76, 0.28), radius: 16, x: 0, y: 8)
     }
 
     private func saveButton(_ p: SBPalette) -> some View {
@@ -410,5 +473,14 @@ struct QuickEntryView: View {
             try? await Task.sleep(for: .seconds(1.6))
             if !Task.isCancelled { justSaved = false }
         }
+    }
+}
+
+// MARK: - Anchor for positioning the type dropdown under its chip
+
+private struct TypeAnchorKey: PreferenceKey {
+    static let defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
     }
 }
