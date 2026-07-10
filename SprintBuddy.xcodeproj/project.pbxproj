@@ -11,6 +11,7 @@
 		8886408C3000A99300DC190E /* SprintBuddyKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 888640833000A99300DC190E /* SprintBuddyKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		888640A23000AA6C00DC190E /* SprintBuddyKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 888640833000A99300DC190E /* SprintBuddyKit.framework */; };
 		888640A33000AA6C00DC190E /* SprintBuddyKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 888640833000A99300DC190E /* SprintBuddyKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		888640C73000B9EA00DC190E /* SprintBuddyMenuBar.app in CopyFiles */ = {isa = PBXBuildFile; fileRef = 888640953000A9AD00DC190E /* SprintBuddyMenuBar.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,16 @@
 				888640A33000AA6C00DC190E /* SprintBuddyKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		888640C63000B9B400DC190E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LoginItems;
+			dstSubfolderSpec = 1;
+			files = (
+				888640C73000B9EA00DC190E /* SprintBuddyMenuBar.app in CopyFiles */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -155,6 +166,7 @@
 				888522F82FFEB8FF0099F48B /* Frameworks */,
 				888522F92FFEB8FF0099F48B /* Resources */,
 				8886408D3000A99300DC190E /* Embed Frameworks */,
+				888640C63000B9B400DC190E /* CopyFiles */,
 			);
 			buildRules = (
 			);

@@ -13,7 +13,6 @@ import SwiftData
 import SprintBuddyKit
 import AppKit
 import UserNotifications
-import ServiceManagement
 
 let mainAppBundleID = "com.hadiyarajesh.SprintBuddy"
 
@@ -32,8 +31,8 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
-        // Keep the agent starting at login (idempotent).
-        try? SMAppService.mainApp.register()
+        // Login registration is owned by the main app (it registers this
+        // embedded helper via SMAppService.loginItem).
         rescheduleRecap()
         NotificationCenter.default.addObserver(
             self, selector: #selector(appBecameActive),
