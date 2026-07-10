@@ -129,12 +129,22 @@ struct ContentView: View {
     /// user-chosen file via `NSSavePanel` (needs the read-write user-selected
     /// files entitlement enabled in Task 14A).
     private func exportData() {
-        let data = SprintStore.exportData(sprints)
+        let data: Data
+        do {
+            data = try SprintStore.exportData(sprints)
+        } catch {
+            showImportError(String(localized: "Couldn’t prepare the export."))
+            return
+        }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "sprintbuddy-\(DateKey.iso(DateKey.today())).json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? data.write(to: url)
+        do {
+            try data.write(to: url)
+        } catch {
+            showImportError(String(localized: "Couldn’t save the export."))
+        }
     }
 
     /// Reads a user-chosen JSON file via `NSOpenPanel`, validates it through

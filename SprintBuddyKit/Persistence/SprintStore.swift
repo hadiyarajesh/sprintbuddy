@@ -19,7 +19,7 @@ public struct SprintStore {
         dtos.forEach { context.insert(Sprint.from($0)) }
     }
 
-    public static func exportData(_ sprints: [Sprint]) -> Data {
+    public static func exportData(_ sprints: [Sprint]) throws -> Data {
         // Defensive: never write duplicate sprint ids into the export file, so a
         // corrupted/duplicated store can't produce an inflated import count.
         var seen = Set<String>()
@@ -27,6 +27,6 @@ public struct SprintStore {
             guard seen.insert(sprint.id).inserted else { return nil }
             return sprint.toDTO()
         }
-        return SprintBuddyCodec.encode(unique)
+        return try SprintBuddyCodec.encode(unique)
     }
 }
