@@ -17,10 +17,10 @@ struct DayGrid: View {
     let today: String
     @ObservedObject var appState: AppState
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: 16) {
             ForEach(SprintMath.visibleDates(dto, showWeekends: appState.showWeekends), id: \.self) { iso in
                 if let day = dto.days[iso] {
                     DayCell(

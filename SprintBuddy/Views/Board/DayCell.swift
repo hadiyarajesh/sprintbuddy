@@ -141,12 +141,13 @@ struct DayCell: View {
             }
         }
         // The prototype's cell shadow uses a negative spread (`0 10px 22px -16px`)
-        // to stay tucked below the card. SwiftUI has no spread, so a plain
-        // `radius: 6` shadow bled ~6px sideways and met the neighbor's shadow
-        // across the 12pt gutter, making cards look attached. Keep the radius
-        // small (well under half the gutter) and push it downward instead.
+        // to stay tucked below the card. SwiftUI has no spread, and a Gaussian
+        // shadow's faint tail reaches well past its `radius`, so a wider shadow
+        // bled across the gutter and met the neighbor's — making cards look
+        // attached. Keep the radius tight and push it downward; the 16pt gutter
+        // (DayGrid) then leaves a clear gap between cards.
         .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.04) : .clear, radius: 1, x: 0, y: 1)
-        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.12) : .clear, radius: 4, x: 0, y: 5)
+        .shadow(color: s.showShadow ? Color.rgba(19, 19, 76, 0.13) : .clear, radius: 3, x: 0, y: 4)
         .offset(y: isHovering ? -3 : 0)
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }
@@ -158,9 +159,12 @@ struct DayCell: View {
 
     private func header(_ s: Style) -> some View {
         HStack(alignment: .top, spacing: 6) {
-            // When the pane is open the cells get narrow; keep the date/weekday/TODAY
-            // pill from breaking mid-word by picking a one-line layout when it fits and
-            // dropping the TODAY pill to a second line (as a whole) when it doesn't.
+            // When the pane is open the cells get narrow. Offer progressively
+            // narrower header layouts, ending with date over weekday — and keep
+            // the texts compressible (no fixedSize) so the header can never
+            // force the card wider than its grid column. A card whose minimum
+            // width exceeds the column overflows the gutter on both sides,
+            // which made adjacent cards look attached.
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     dateText(s)
@@ -173,6 +177,13 @@ struct DayCell: View {
                         weekdayText
                     }
                     todayPill
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    dateText(s)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        weekdayText
+                        todayPill
+                    }
                 }
             }
             Spacer(minLength: 0)
@@ -190,7 +201,7 @@ struct DayCell: View {
             .font(.system(size: 15, weight: .bold))
             .foregroundStyle(s.labelColor)
             .lineLimit(1)
-            .fixedSize()
+            .minimumScaleFactor(0.8)
     }
 
     private var weekdayText: some View {
@@ -198,7 +209,6 @@ struct DayCell: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(palette.grey3)
             .lineLimit(1)
-            .fixedSize()
     }
 
     @ViewBuilder
