@@ -24,6 +24,9 @@ struct QuickEntryView: View {
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
     @State private var recapExpanded = AppGroup.defaults.bool(forKey: "recapEnabled")
+    // Re-read on each panel open so a theme change in the main app is reflected
+    // (a separate process gets no live UserDefaults notification).
+    @State private var themeRaw = AppGroup.defaults.string(forKey: "theme") ?? "auto"
 
     private var todayISO: String { DateKey.iso(DateKey.today()) }
 
@@ -51,7 +54,6 @@ struct QuickEntryView: View {
 
     // MARK: - Theme (honor the shared "theme" pref; fall back to system for "auto")
 
-    private var themeRaw: String { AppGroup.defaults.string(forKey: "theme") ?? "auto" }
     private var effectiveScheme: ColorScheme {
         switch themeRaw {
         case "dark": return .dark
@@ -128,6 +130,10 @@ struct QuickEntryView: View {
         .background(p.white)
         .environment(\.palette, p)
         .preferredColorScheme(themeRaw == "auto" ? nil : effectiveScheme)
+        .onAppear {
+            themeRaw = AppGroup.defaults.string(forKey: "theme") ?? "auto"
+            recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
+        }
         .onDisappear { savedResetTask?.cancel() }
     }
 
@@ -210,38 +216,17 @@ struct QuickEntryView: View {
         .padding(16)
     }
 
-    /// Compact Done/Doing/Blocker picker (dropdown) so it fits on the Save row.
+    /// Compact Done/Doing/Blocker picker (native dropdown) so it fits on the
+    /// Save row. Tinted to the selected type's color.
     private func typeMenu(_ p: SBPalette) -> some View {
-        Menu {
+        Picker("", selection: $draftType) {
             ForEach([UpdateType.done, .doing, .blocker], id: \.self) { t in
-                Button { draftType = t } label: {
-                    if draftType == t {
-                        Label(UpdateMeta.label(t), systemImage: "checkmark")
-                    } else {
-                        Text(UpdateMeta.label(t))
-                    }
-                }
+                Text(UpdateMeta.label(t)).tag(t)
             }
-        } label: {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(UpdateMeta.color(draftType, p))
-                    .frame(width: 7, height: 7)
-                Text(UpdateMeta.label(draftType))
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(UpdateMeta.color(draftType, p))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(p.grey3)
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 10)
-            .background(UpdateMeta.tint(draftType, p))
-            .clipShape(Capsule())
-            .overlay(Capsule().strokeBorder(UpdateMeta.color(draftType, p), lineWidth: 1))
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .tint(UpdateMeta.color(draftType, p))
         .fixedSize()
     }
 
