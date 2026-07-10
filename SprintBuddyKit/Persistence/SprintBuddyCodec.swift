@@ -1,10 +1,12 @@
 import Foundation
 
-enum SprintBuddyCodec {
+public enum SprintBuddyCodec {
     struct Export: Codable { var app: String; var schema: Int; var exportedAt: String; var sprints: [SprintDTO] }
-    enum ImportError: Error, Equatable { case notJSON, notSprintBuddy }
+    public enum ImportError: Error, Equatable { case notJSON, notSprintBuddy }
 
-    static func encode(_ sprints: [SprintDTO]) -> Data {
+    /// Encodes the export payload. Throws on failure so callers never write an
+    /// empty/partial "backup" silently.
+    public static func encode(_ sprints: [SprintDTO]) throws -> Data {
         // The `app` field is informational only — decode never checks its value,
         // so files exported under the old "ScrumBuddy" name still import fine.
         let payload = Export(app: "SprintBuddy", schema: 5,
@@ -12,12 +14,16 @@ enum SprintBuddyCodec {
                              sprints: sprints)
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted]
-        return (try? enc.encode(payload)) ?? Data()
+        return try enc.encode(payload)
     }
 
-    static func decode(_ data: Data) -> Result<[SprintDTO], ImportError> {
-        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+    public static func decode(_ data: Data) -> Result<[SprintDTO], ImportError> {
+        // Distinguish "not JSON at all" from "valid JSON of the wrong shape".
+        guard let json = try? JSONSerialization.jsonObject(with: data) else {
             return .failure(.notJSON)
+        }
+        guard let obj = json as? [String: Any] else {
+            return .failure(.notSprintBuddy)
         }
         guard let rawSprints = obj["sprints"] as? [[String: Any]], !rawSprints.isEmpty else {
             return .failure(.notSprintBuddy)

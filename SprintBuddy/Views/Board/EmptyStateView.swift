@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct EmptyStateView: View {
     let onNew: () -> Void

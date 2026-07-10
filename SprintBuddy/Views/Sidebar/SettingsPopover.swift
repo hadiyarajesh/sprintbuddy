@@ -30,6 +30,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct SettingsPopover: View {
     @ObservedObject var appState: AppState
@@ -37,16 +38,15 @@ struct SettingsPopover: View {
     var onImport: () -> Void = {}
 
     @Environment(\.palette) private var palette
-    @State private var launchAtLogin = LoginItems.isEnabled
+    @State private var showInMenuBar = AgentController.isEnabled
 
-    /// Drives the login-item registration and reflects the real resulting
-    /// status (so a failed register/unregister snaps the toggle back).
-    private var launchAtLoginBinding: Binding<Bool> {
+    /// Registers/launches or unregisters/quits the menu-bar agent.
+    private var menuBarBinding: Binding<Bool> {
         Binding(
-            get: { launchAtLogin },
+            get: { showInMenuBar },
             set: { newValue in
-                LoginItems.setEnabled(newValue)
-                launchAtLogin = LoginItems.isEnabled
+                showInMenuBar = newValue
+                AgentController.setEnabled(newValue)
             }
         )
     }
@@ -68,11 +68,12 @@ struct SettingsPopover: View {
                 .padding(.bottom, 2)
             toggleRow(title: "Show weekends", isOn: $appState.showWeekends)
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
+            toggleRow(title: "Auto-open details pane", isOn: $appState.autoOpenDetail)
 
-            sectionLabel("Startup")
+            sectionLabel("Menu Bar")
                 .padding(.top, 12)
                 .padding(.bottom, 2)
-            toggleRow(title: "Launch at login", isOn: launchAtLoginBinding)
+            toggleRow(title: "Show in Menu Bar", isOn: menuBarBinding)
 
             sectionLabel("Data")
                 .padding(.top, 12)
@@ -116,6 +117,10 @@ struct SettingsPopover: View {
         .padding(3)
         .background(palette.muted)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(palette.border, lineWidth: 1)
+        )
     }
 
     private func themeButton(value: String, label: String) -> some View {
@@ -131,6 +136,10 @@ struct SettingsPopover: View {
                 .padding(.horizontal, 4)
                 .background(isActive ? palette.white : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(isActive ? palette.border2 : Color.clear, lineWidth: 1)
+                )
                 .shadow(color: isActive ? Color.black.opacity(0.14) : .clear, radius: 3, x: 0, y: 1)
         }
         .buttonStyle(.plain)
@@ -153,8 +162,8 @@ struct SettingsPopover: View {
 
     private var dataButtons: some View {
         HStack(spacing: 8) {
-            DataActionButton(systemName: "square.and.arrow.up", label: "Export", action: onExport)
             DataActionButton(systemName: "square.and.arrow.down", label: "Import", action: onImport)
+            DataActionButton(systemName: "square.and.arrow.up", label: "Export", action: onExport)
         }
     }
 
@@ -166,7 +175,7 @@ struct SettingsPopover: View {
                 .fill(palette.muted)
                 .frame(height: 1)
                 .padding(.top, 10)
-            Text("SprintBuddy · v2.4.0")
+            Text("SprintBuddy · \(AppInfo.displayVersion)")
                 .font(.system(size: 11))
                 .foregroundStyle(palette.grey3)
                 .padding(.top, 8)

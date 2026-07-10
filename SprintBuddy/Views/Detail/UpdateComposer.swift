@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct UpdateComposer: View {
     @Binding var draftText: String

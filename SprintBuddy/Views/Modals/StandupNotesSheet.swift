@@ -13,6 +13,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import AppKit
 
 struct StandupNotesSheet: View {

@@ -10,13 +10,14 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import SwiftData
 import AppKit
 import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Query(sort: \Sprint.createdAt, order: .reverse) private var sprints: [Sprint]
-    @StateObject private var appState = AppState()
+    @ObservedObject var appState: AppState
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
 
@@ -67,40 +68,56 @@ struct ContentView: View {
             syncSelection()
         }
         .sheet(isPresented: $appState.newSprintOpen) {
-            NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint)
+            themed { NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint) }
         }
         .sheet(isPresented: $appState.standupOpen) {
-            StandupNotesSheet(
-                text: activeSprint.map { StandupFormatter.text($0.toDTO()) } ?? "",
-                onClose: { appState.standupOpen = false }
-            )
+            themed {
+                StandupNotesSheet(
+                    text: activeSprint.map { StandupFormatter.text($0.toDTO()) } ?? "",
+                    onClose: { appState.standupOpen = false }
+                )
+            }
         }
         .sheet(isPresented: $appState.deleteOpen) {
-            DeleteSprintSheet(
-                sprintName: activeSprint?.name ?? "",
-                onCancel: { appState.deleteOpen = false },
-                onConfirm: confirmDelete
-            )
+            themed {
+                DeleteSprintSheet(
+                    sprintName: activeSprint?.name ?? "",
+                    onCancel: { appState.deleteOpen = false },
+                    onConfirm: confirmDelete
+                )
+            }
         }
         .sheet(isPresented: $appState.importWarnOpen) {
-            ImportWarningSheet(
-                currentCount: sprints.count,
-                pendingCount: appState.pendingImport?.count ?? 0,
-                pendingNames: appState.pendingImport?.map(\.name) ?? [],
-                onCancel: {
-                    appState.pendingImport = nil
-                    appState.importWarnOpen = false
-                },
-                onConfirm: { applyImport(appState.pendingImport ?? []) }
-            )
+            themed {
+                ImportWarningSheet(
+                    currentCount: sprints.count,
+                    pendingCount: appState.pendingImport?.count ?? 0,
+                    pendingNames: appState.pendingImport?.map(\.name) ?? [],
+                    onCancel: {
+                        appState.pendingImport = nil
+                        appState.importWarnOpen = false
+                    },
+                    onConfirm: { applyImport(appState.pendingImport ?? []) }
+                )
+            }
         }
+    }
+
+    /// Sheets present in a separate hosting context that doesn't inherit the
+    /// window's `.preferredColorScheme` or the injected palette, so re-apply
+    /// both to keep modals matching the app's theme.
+    @ViewBuilder
+    private func themed<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .environment(\.palette, palette)
+            .preferredColorScheme(appState.colorSchemePreference)
     }
 
     /// Creates a sprint via `SprintStore`, persists it, and selects it (and
     /// its default day) so the board renders the new sprint immediately.
     private func createSprint(name: String, focus: String, startISO: String, weeks: Int) {
         let created = SprintStore.createSprint(name: name, focus: focus, startISO: startISO, weeks: weeks, in: modelContext)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         appState.selectedSprintID = created.id
         appState.selectedDateISO = SprintMath.defaultDate(created.toDTO(), today: DateKey.iso(DateKey.today()))
         appState.paneCollapsed = false
@@ -112,12 +129,22 @@ struct ContentView: View {
     /// user-chosen file via `NSSavePanel` (needs the read-write user-selected
     /// files entitlement enabled in Task 14A).
     private func exportData() {
-        let data = SprintStore.exportData(sprints)
+        let data: Data
+        do {
+            data = try SprintStore.exportData(sprints)
+        } catch {
+            showImportError(String(localized: "Couldn’t prepare the export."))
+            return
+        }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "sprintbuddy-\(DateKey.iso(DateKey.today())).json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? data.write(to: url)
+        do {
+            try data.write(to: url)
+        } catch {
+            showImportError(String(localized: "Couldn’t save the export."))
+        }
     }
 
     /// Reads a user-chosen JSON file via `NSOpenPanel`, validates it through
@@ -130,14 +157,14 @@ struct ContentView: View {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = try? Data(contentsOf: url) else {
-            showImportError("Couldn’t read that file.")
+            showImportError(String(localized: "Couldn’t read that file."))
             return
         }
         switch SprintBuddyCodec.decode(data) {
         case .failure(.notJSON):
-            showImportError("That file isn’t valid JSON.")
+            showImportError(String(localized: "That file isn’t valid JSON."))
         case .failure(.notSprintBuddy):
-            showImportError("This doesn’t look like a SprintBuddy export.")
+            showImportError(String(localized: "This doesn’t look like a SprintBuddy export."))
         case .success(let dtos):
             if sprints.isEmpty {
                 applyImport(dtos)
@@ -163,7 +190,7 @@ struct ContentView: View {
     /// selects the first imported sprint (and its default day).
     private func applyImport(_ dtos: [SprintDTO]) {
         SprintStore.replaceAll(with: dtos, in: modelContext)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         appState.selectedSprintID = dtos.first?.id
         appState.selectedDateISO = dtos.first.flatMap {
             SprintMath.defaultDate($0, today: DateKey.iso(DateKey.today()))
@@ -184,7 +211,7 @@ struct ContentView: View {
         }
         let deletedID = sprint.id
         modelContext.delete(sprint)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         let next = sprints
             .filter { $0.id != deletedID }
             .sorted { $0.createdAt > $1.createdAt }
@@ -266,6 +293,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(appState: AppState())
         .modelContainer(for: [Sprint.self, Day.self, DayUpdate.self], inMemory: true)
 }

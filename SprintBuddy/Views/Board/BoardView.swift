@@ -13,6 +13,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import SwiftData
 
 struct BoardView: View {

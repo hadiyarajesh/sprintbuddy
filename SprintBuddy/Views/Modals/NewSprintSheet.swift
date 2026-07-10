@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct NewSprintSheet: View {
     @Binding var isPresented: Bool
@@ -247,8 +248,6 @@ struct NewSprintSheet: View {
 }
 
 #Preview {
-    NewSprintSheet(isPresented: .constant(true)) { name, focus, startISO, weeks in
-        print("create", name, focus, startISO, weeks)
-    }
+    NewSprintSheet(isPresented: .constant(true)) { _, _, _, _ in }
     .environment(\.palette, SBPalette(.light))
 }

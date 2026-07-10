@@ -1,24 +1,28 @@
 import Foundation
 
-enum DayStatus: String, Codable, CaseIterable { case working, leave, holiday, weekend }
-enum UpdateType: String, Codable, CaseIterable { case done, doing, blocker }
+public enum DayStatus: String, Codable, CaseIterable { case working, leave, holiday, weekend }
+public enum UpdateType: String, Codable, CaseIterable { case done, doing, blocker }
 
-struct UpdateDTO: Codable, Equatable {
-    var id: String
-    var type: UpdateType
-    var text: String
+public struct UpdateDTO: Codable, Equatable {
+    public var id: String
+    public var type: UpdateType
+    public var text: String
+
+    public init(id: String, type: UpdateType, text: String) {
+        self.id = id; self.type = type; self.text = text
+    }
 }
 
-struct DayDTO: Codable, Equatable {
-    var status: DayStatus
-    var privateNote: String
-    var updates: [UpdateDTO]
+public struct DayDTO: Codable, Equatable {
+    public var status: DayStatus
+    public var privateNote: String
+    public var updates: [UpdateDTO]
 
-    init(status: DayStatus, privateNote: String = "", updates: [UpdateDTO] = []) {
+    public init(status: DayStatus, privateNote: String = "", updates: [UpdateDTO] = []) {
         self.status = status; self.privateNote = privateNote; self.updates = updates
     }
     enum CodingKeys: String, CodingKey { case status, privateNote, updates, note }
-    init(from dec: Decoder) throws {
+    public init(from dec: Decoder) throws {
         let c = try dec.container(keyedBy: CodingKeys.self)
         status = (try? c.decode(DayStatus.self, forKey: .status)) ?? .working
         privateNote = (try? c.decode(String.self, forKey: .privateNote)) ?? ""
@@ -31,7 +35,7 @@ struct DayDTO: Codable, Equatable {
                 .map { UpdateDTO(id: UUID().uuidString, type: .done, text: $0) }
         } else { updates = [] }
     }
-    func encode(to enc: Encoder) throws {
+    public func encode(to enc: Encoder) throws {
         var c = enc.container(keyedBy: CodingKeys.self)
         try c.encode(status, forKey: .status)
         try c.encode(privateNote, forKey: .privateNote)
@@ -39,20 +43,20 @@ struct DayDTO: Codable, Equatable {
     }
 }
 
-struct SprintDTO: Codable, Equatable {
-    var id: String
-    var name: String
-    var description: String
-    var start: String
-    var weeks: Int
-    var days: [String: DayDTO]
+public struct SprintDTO: Codable, Equatable {
+    public var id: String
+    public var name: String
+    public var description: String
+    public var start: String
+    public var weeks: Int
+    public var days: [String: DayDTO]
 
-    init(id: String, name: String, description: String = "", start: String, weeks: Int, days: [String: DayDTO]) {
+    public init(id: String, name: String, description: String = "", start: String, weeks: Int, days: [String: DayDTO]) {
         self.id = id; self.name = name; self.description = description
         self.start = start; self.weeks = weeks; self.days = days
     }
     enum CodingKeys: String, CodingKey { case id, name, description, start, weeks, days }
-    init(from dec: Decoder) throws {
+    public init(from dec: Decoder) throws {
         let c = try dec.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
         name = try c.decode(String.self, forKey: .name)
@@ -61,5 +65,5 @@ struct SprintDTO: Codable, Equatable {
         weeks = try c.decode(Int.self, forKey: .weeks)
         days = try c.decode([String: DayDTO].self, forKey: .days)
     }
-    var orderedDates: [String] { days.keys.sorted() }
+    public var orderedDates: [String] { days.keys.sorted() }
 }

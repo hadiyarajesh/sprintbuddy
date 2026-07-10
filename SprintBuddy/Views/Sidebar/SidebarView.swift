@@ -18,6 +18,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import AppKit
 import SwiftData
 
@@ -55,17 +56,25 @@ struct SidebarView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     section(title: "Active", sprints: activeSprints, isOpen: $appState.activeOpen, emptyText: "No active sprints")
-                    section(title: "Archive", sprints: archiveSprints, isOpen: $appState.archiveOpen, emptyText: "No archived sprints")
+                    // Archive is date-derived (a sprint whose last day is past),
+                    // so only surface the section once something has landed there.
+                    if !archiveSprints.isEmpty {
+                        section(title: "Archive", sprints: archiveSprints, isOpen: $appState.archiveOpen, emptyText: "No archived sprints")
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
             }
 
-            newSprintButton
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 4)
+            // When there are no sprints at all, the empty state shows its own
+            // centered "New Sprint" button — hide the sidebar's to avoid two.
+            if !sprints.isEmpty {
+                newSprintButton
+                    .padding(.horizontal, 14)
+                    .padding(.top, 14)
+                    .padding(.bottom, 14)
+            }
 
             footer
         }
@@ -93,7 +102,7 @@ struct SidebarView: View {
                     .font(.system(size: 18, weight: .bold))
                     .tracking(-0.2)
                     .foregroundStyle(palette.blue)
-                Text("v2.4.0")
+                Text(AppInfo.displayVersion)
                     .font(.system(size: 11))
                     .foregroundStyle(palette.grey3)
             }
@@ -143,7 +152,8 @@ struct SidebarView: View {
     private func select(_ sprint: Sprint) {
         appState.selectedSprintID = sprint.id
         appState.selectedDateISO = SprintMath.defaultDate(sprint.toDTO(), today: todayISO)
-        appState.paneCollapsed = false
+        // Selecting a sprint no longer forces the detail pane open; it keeps
+        // whatever collapsed/expanded state the user last chose.
     }
 
     // MARK: - New Sprint

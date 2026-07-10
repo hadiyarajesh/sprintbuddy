@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct DayGrid: View {
     let dto: SprintDTO
@@ -30,7 +31,9 @@ struct DayGrid: View {
                         notLogged: isNotLogged(day, iso),
                         onSelect: {
                             appState.selectedDateISO = iso
-                            appState.paneCollapsed = false
+                            // Only auto-expand the detail pane when the pref is on;
+                            // otherwise the user opens it via the collapsed strip.
+                            if appState.autoOpenDetail { appState.paneCollapsed = false }
                         }
                     )
                 }

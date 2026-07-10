@@ -5,11 +5,12 @@
 //  The Help popover attached to the sidebar footer's "Help" button: a
 //  "Quick tips" label followed by three numbered tips.
 //
-//  Copy is verbatim from design_handoff/project/ScrumBuddy.dc.html lines
-//  194-196.
+//  Copy is adapted from design_handoff/project/ScrumBuddy.dc.html lines
+//  194-196 (the third tip drops the data-export mention).
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct HelpPopover: View {
     @Environment(\.palette) private var palette
@@ -17,7 +18,7 @@ struct HelpPopover: View {
     private static let tips: [String] = [
         "Create a sprint and SprintBuddy generates a card for every day.",
         "Click any day to log effort or mark it as leave or holiday.",
-        "Tag each update Done, Doing, or Blocker; back up or move data with JSON export/import.",
+        "Tag each update Done, Doing, or Blocker.",
     ]
 
     var body: some View {

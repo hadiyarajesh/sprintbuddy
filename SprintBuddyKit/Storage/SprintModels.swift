@@ -1,21 +1,21 @@
 import Foundation
 import SwiftData
 
-@Model final class Sprint {
-    var id: String = ""
-    var name: String = ""
-    var focus: String = ""
-    var startISO: String = ""
-    var weeks: Int = 2
-    var createdAt: Date = Date()
-    @Relationship(deleteRule: .cascade, inverse: \Day.sprint) var days: [Day] = []
+@Model public final class Sprint {
+    public var id: String = ""
+    public var name: String = ""
+    public var focus: String = ""
+    public var startISO: String = ""
+    public var weeks: Int = 2
+    public var createdAt: Date = Date()
+    @Relationship(deleteRule: .cascade, inverse: \Day.sprint) public var days: [Day] = []
 
-    init(id: String, name: String, focus: String, startISO: String, weeks: Int, createdAt: Date = Date()) {
+    public init(id: String, name: String, focus: String, startISO: String, weeks: Int, createdAt: Date = Date()) {
         self.id = id; self.name = name; self.focus = focus
         self.startISO = startISO; self.weeks = weeks; self.createdAt = createdAt
     }
 
-    func toDTO() -> SprintDTO {
+    public func toDTO() -> SprintDTO {
         var dayMap: [String: DayDTO] = [:]
         for d in days {
             let ups = d.updates.sorted { $0.sortIndex < $1.sortIndex }
@@ -25,7 +25,7 @@ import SwiftData
         return SprintDTO(id: id, name: name, description: focus, start: startISO, weeks: weeks, days: dayMap)
     }
 
-    static func from(_ dto: SprintDTO) -> Sprint {
+    public static func from(_ dto: SprintDTO) -> Sprint {
         let s = Sprint(id: dto.id, name: dto.name, focus: dto.description, startISO: dto.start, weeks: dto.weeks)
         for iso in dto.orderedDates {
             let dd = dto.days[iso]!
@@ -39,33 +39,33 @@ import SwiftData
     }
 }
 
-@Model final class Day {
-    var dateISO: String = ""
-    var statusRaw: String = DayStatus.working.rawValue
-    var privateNote: String = ""
-    @Relationship(deleteRule: .cascade, inverse: \DayUpdate.day) var updates: [DayUpdate] = []
-    var sprint: Sprint?
+@Model public final class Day {
+    public var dateISO: String = ""
+    public var statusRaw: String = DayStatus.working.rawValue
+    public var privateNote: String = ""
+    @Relationship(deleteRule: .cascade, inverse: \DayUpdate.day) public var updates: [DayUpdate] = []
+    public var sprint: Sprint?
 
-    init(dateISO: String, status: DayStatus, privateNote: String = "") {
+    public init(dateISO: String, status: DayStatus, privateNote: String = "") {
         self.dateISO = dateISO; self.statusRaw = status.rawValue; self.privateNote = privateNote
     }
-    var status: DayStatus {
+    public var status: DayStatus {
         get { DayStatus(rawValue: statusRaw) ?? .working }
         set { statusRaw = newValue.rawValue }
     }
 }
 
-@Model final class DayUpdate {
-    var id: String = UUID().uuidString
-    var typeRaw: String = UpdateType.done.rawValue
-    var text: String = ""
-    var sortIndex: Int = 0
-    var day: Day?
+@Model public final class DayUpdate {
+    public var id: String = UUID().uuidString
+    public var typeRaw: String = UpdateType.done.rawValue
+    public var text: String = ""
+    public var sortIndex: Int = 0
+    public var day: Day?
 
-    init(id: String, type: UpdateType, text: String, sortIndex: Int) {
+    public init(id: String, type: UpdateType, text: String, sortIndex: Int) {
         self.id = id; self.typeRaw = type.rawValue; self.text = text; self.sortIndex = sortIndex
     }
-    var type: UpdateType {
+    public var type: UpdateType {
         get { UpdateType(rawValue: typeRaw) ?? .doing }
         set { typeRaw = newValue.rawValue }
     }
