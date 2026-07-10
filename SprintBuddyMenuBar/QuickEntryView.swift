@@ -65,6 +65,18 @@ struct QuickEntryView: View {
     }
     private var palette: SBPalette { SBPalette(effectiveScheme) }
 
+    /// Force the agent's AppKit appearance to match the chosen theme. SwiftUI's
+    /// `.preferredColorScheme` doesn't reach the `NSDatePicker` behind the recap
+    /// time field, so its digits followed the system window appearance (white on
+    /// our light box under a dark system). Pinning `NSApp.appearance` fixes it.
+    private func applyAppearance() {
+        switch themeRaw {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: NSApp.appearance = nil
+        }
+    }
+
     // MARK: - Recap prefs bindings
 
     private var recapToggle: Binding<Bool> {
@@ -150,6 +162,7 @@ struct QuickEntryView: View {
         .onAppear {
             themeRaw = AppGroup.defaults.string(forKey: PrefKey.theme) ?? "auto"
             recapEnabled = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
+            applyAppearance()
         }
         .onDisappear { savedResetTask?.cancel() }
     }
