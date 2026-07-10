@@ -124,9 +124,6 @@ struct QuickEntryView: View {
 
             Divider().overlay(p.border)
             recapSettings(p)
-
-            Divider().overlay(p.border)
-            quitRow(p)
         }
         .frame(width: 320)
         .background(p.white)
@@ -185,9 +182,23 @@ struct QuickEntryView: View {
                     .background(p.chip)
                     .clipShape(Capsule())
             }
+            quitButton(p)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+
+    private func quitButton(_ p: SBPalette) -> some View {
+        Button { NSApp.terminate(nil) } label: {
+            Image(systemName: "power")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(p.grey3)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Quit SprintBuddy")
+        .padding(.leading, 2)
     }
 
     // MARK: - Composer
@@ -403,23 +414,6 @@ struct QuickEntryView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-    }
-
-    private func quitRow(_ p: SBPalette) -> some View {
-        Button { NSApp.terminate(nil) } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "power")
-                    .font(.system(size: 11, weight: .semibold))
-                Text("Quit SprintBuddy")
-                    .font(.system(size: 12.5, weight: .medium))
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(p.grey1)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 
     // MARK: - Empty state (today isn't in any sprint)
