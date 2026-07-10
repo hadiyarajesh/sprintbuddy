@@ -8,7 +8,5 @@
 	<array>
 		<string>group.com.hadiyarajesh.sprintbuddy</string>
 	</array>
-	<key>com.apple.security.files.user-selected.read-write</key>
-	<true/>
 </dict>
 </plist>

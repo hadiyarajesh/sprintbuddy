@@ -11,6 +11,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import SwiftData
 
 struct DetailPane: View {

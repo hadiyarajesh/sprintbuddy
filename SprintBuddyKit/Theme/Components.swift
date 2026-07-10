@@ -1,10 +1,10 @@
 //
 //  Components.swift
-//  SprintBuddy
+//  SprintBuddyKit
 //
-//  Shared, reusable SwiftUI views transcribed from the ScrumBuddy HTML prototype.
-//  All components read the current `SBPalette` via `@Environment(\.palette)` so callers
-//  never need to thread colors through explicitly (see Theme.swift for the environment key).
+//  Shared, reusable SwiftUI views. All components read the current `SBPalette`
+//  via `@Environment(\.palette)` so callers never thread colors through
+//  explicitly (see Theme.swift for the environment key).
 //
 
 import SwiftUI
@@ -12,13 +12,17 @@ import SwiftUI
 // MARK: - StatusPill
 
 /// Dot + label pill on a tinted background, used for sprint status (Active / Completed / Upcoming).
-struct StatusPill: View {
+public struct StatusPill: View {
     let label: String
     let dotColor: Color
     let textColor: Color
     let background: Color
 
-    var body: some View {
+    public init(label: String, dotColor: Color, textColor: Color, background: Color) {
+        self.label = label; self.dotColor = dotColor; self.textColor = textColor; self.background = background
+    }
+
+    public var body: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(dotColor)
@@ -37,7 +41,7 @@ struct StatusPill: View {
 // MARK: - StatPill
 
 /// Value + label pill for overview stats (e.g. "4/5 logged"), tinted with a matching border.
-struct StatPill: View {
+public struct StatPill: View {
     let value: String
     let label: String
     let color: Color
@@ -46,7 +50,11 @@ struct StatPill: View {
 
     @Environment(\.palette) private var palette
 
-    var body: some View {
+    public init(value: String, label: String, color: Color, tint: Color, border: Color) {
+        self.value = value; self.label = label; self.color = color; self.tint = tint; self.border = border
+    }
+
+    public var body: some View {
         HStack(spacing: 7) {
             Text(value)
                 .font(.system(size: 16, weight: .bold))
@@ -70,12 +78,14 @@ struct StatPill: View {
 // MARK: - TypeTag
 
 /// Small rounded tag showing an update's type (Done / Doing / Blocker), colored via `UpdateMeta`.
-struct TypeTag: View {
+public struct TypeTag: View {
     let type: UpdateType
 
     @Environment(\.palette) private var palette
 
-    var body: some View {
+    public init(type: UpdateType) { self.type = type }
+
+    public var body: some View {
         Text(UpdateMeta.label(type).uppercased())
             .font(.system(size: 10, weight: .bold))
             .tracking(0.3)
@@ -90,14 +100,18 @@ struct TypeTag: View {
 // MARK: - TypeChipButton
 
 /// Selectable pill used in the update composer to pick Done / Doing / Blocker.
-struct TypeChipButton: View {
+public struct TypeChipButton: View {
     let type: UpdateType
     let isSelected: Bool
     let action: () -> Void
 
     @Environment(\.palette) private var palette
 
-    var body: some View {
+    public init(type: UpdateType, isSelected: Bool, action: @escaping () -> Void) {
+        self.type = type; self.isSelected = isSelected; self.action = action
+    }
+
+    public var body: some View {
         let color = UpdateMeta.color(type, palette)
 
         Button(action: action) {
@@ -124,9 +138,8 @@ struct TypeChipButton: View {
 
 // MARK: - SBToggle
 
-/// A 38x22 pill track with an 18pt knob, matching the prototype's toggle switches
-/// (e.g. "Show weekends", "Highlight unlogged days").
-struct SBToggle: View {
+/// A 38x22 pill track with an 18pt knob, matching the prototype's toggle switches.
+public struct SBToggle: View {
     @Binding var isOn: Bool
 
     @Environment(\.palette) private var palette
@@ -136,7 +149,9 @@ struct SBToggle: View {
     private let knobSize: CGFloat = 18
     private let knobInset: CGFloat = 2
 
-    var body: some View {
+    public init(isOn: Binding<Bool>) { self._isOn = isOn }
+
+    public var body: some View {
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 isOn.toggle()
@@ -162,7 +177,7 @@ struct SBToggle: View {
 // MARK: - SectionHeaderButton
 
 /// Sidebar section header: chevron (rotates -90deg when collapsed) + uppercase label + count chip.
-struct SectionHeaderButton: View {
+public struct SectionHeaderButton: View {
     let title: String
     let count: Int
     let isExpanded: Bool
@@ -170,7 +185,11 @@ struct SectionHeaderButton: View {
 
     @Environment(\.palette) private var palette
 
-    var body: some View {
+    public init(title: String, count: Int, isExpanded: Bool, action: @escaping () -> Void) {
+        self.title = title; self.count = count; self.isExpanded = isExpanded; self.action = action
+    }
+
+    public var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.down")
@@ -204,18 +223,25 @@ struct SectionHeaderButton: View {
 // MARK: - IconButton
 
 /// Square icon-only button using an SF Symbol, transparent by default with a hover background.
-struct IconButton: View {
+public struct IconButton: View {
     let systemName: String
     var size: CGFloat = 24
     var iconSize: CGFloat = 13
-    var foreground: Color? = nil
-    var hoverBackground: Color? = nil
+    var foreground: Color?
+    var hoverBackground: Color?
     let action: () -> Void
 
     @Environment(\.palette) private var palette
     @State private var isHovering = false
 
-    var body: some View {
+    public init(systemName: String, size: CGFloat = 24, iconSize: CGFloat = 13,
+                foreground: Color? = nil, hoverBackground: Color? = nil,
+                action: @escaping () -> Void) {
+        self.systemName = systemName; self.size = size; self.iconSize = iconSize
+        self.foreground = foreground; self.hoverBackground = hoverBackground; self.action = action
+    }
+
+    public var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: iconSize, weight: .medium))
@@ -229,13 +255,4 @@ struct IconButton: View {
             isHovering = hovering
         }
     }
-}
-
-#Preview("Pills") {
-    HStack(spacing: 12) {
-        StatusPill(label: "Active", dotColor: .green, textColor: .green, background: .green.opacity(0.15))
-        StatPill(value: "4/5", label: "logged", color: .blue, tint: .blue.opacity(0.1), border: .blue.opacity(0.3))
-        TypeTag(type: .done)
-    }
-    .padding()
 }

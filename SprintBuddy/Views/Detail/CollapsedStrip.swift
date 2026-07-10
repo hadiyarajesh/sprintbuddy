@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct CollapsedStrip: View {
     let dateLong: String

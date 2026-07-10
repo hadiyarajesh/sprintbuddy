@@ -1,22 +1,20 @@
 //
 //  QuickEntryView.swift
-//  SprintBuddy
+//  SprintBuddyMenuBar
 //
-//  The menu-bar quick-logger panel. Lets you jot a Done/Doing/Blocker update
-//  for *today* without opening the main window — it writes straight into the
-//  same SwiftData store, so the entry shows up on the board immediately.
-//
-//  Presented by the `MenuBarExtra` scene in SprintBuddyApp (window style).
+//  The menu-bar quick-logger panel (agent). Logs a Done/Doing/Blocker update
+//  for today into the shared App-Group store, shows a "Recent" recap, and hosts
+//  the opt-in daily-recap control (the agent owns the notification permission).
 //
 
 import SwiftUI
 import SwiftData
+import SprintBuddyKit
 import AppKit
 
 struct QuickEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.openWindow) private var openWindow
     @Query(sort: \Sprint.createdAt, order: .reverse) private var sprints: [Sprint]
 
     @State private var draftText: String = ""
@@ -24,10 +22,13 @@ struct QuickEntryView: View {
     @State private var justSaved = false
     @State private var savedResetTask: Task<Void, Never>?
 
+    @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
+
     private var todayISO: String { DateKey.iso(DateKey.today()) }
 
-    /// The sprint that covers today (most recently created wins, since
-    /// `sprints` is sorted newest-first) and today's `Day` within it.
+    private var dtos: [SprintDTO] { sprints.map { $0.toDTO() } }
+
+    /// The sprint that covers today (most recently created wins) and today's `Day`.
     private var target: (sprint: Sprint, day: Day)? {
         for sprint in sprints {
             if let day = sprint.days.first(where: { $0.dateISO == todayISO }) {
@@ -41,18 +42,15 @@ struct QuickEntryView: View {
         target != nil && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// The most recent day *before today* that has updates — the recap shown
-    /// at the bottom of the panel.
+    /// The most recent day *before today* that has updates.
     private var recentRecap: StandupRecap.DayRecap? {
         let yesterday = DateKey.iso(DateKey.addDays(DateKey.today(), -1))
-        return StandupRecap.mostRecentLogged(sprints.map { $0.toDTO() }, onOrBefore: yesterday)
+        return StandupRecap.mostRecentLogged(dtos, onOrBefore: yesterday)
     }
 
-    // MARK: - Theme
+    // MARK: - Theme (honor the shared "theme" pref; fall back to system for "auto")
 
-    /// Honor the app's chosen theme (stored by AppState under "theme"); fall
-    /// back to the system scheme for "auto".
-    private var themeRaw: String { UserDefaults.standard.string(forKey: "theme") ?? "auto" }
+    private var themeRaw: String { AppGroup.defaults.string(forKey: "theme") ?? "auto" }
     private var effectiveScheme: ColorScheme {
         switch themeRaw {
         case "dark": return .dark
@@ -61,6 +59,45 @@ struct QuickEntryView: View {
         }
     }
     private var palette: SBPalette { SBPalette(effectiveScheme) }
+
+    // MARK: - Recap prefs bindings
+
+    private var recapToggle: Binding<Bool> {
+        Binding(
+            get: { recapEnabled },
+            set: { newValue in
+                if newValue {
+                    Task {
+                        let granted = await RecapNotifier.requestAuthorization()
+                        recapEnabled = granted
+                        AppGroup.defaults.set(granted, forKey: "recapEnabled")
+                        if granted { RecapNotifier.refresh(sprints: dtos) }
+                    }
+                } else {
+                    recapEnabled = false
+                    AppGroup.defaults.set(false, forKey: "recapEnabled")
+                    RecapNotifier.cancel()
+                }
+            }
+        )
+    }
+
+    private var recapTime: Binding<Date> {
+        Binding(
+            get: {
+                var c = DateComponents()
+                c.hour = (AppGroup.defaults.object(forKey: "recapHour") as? Int) ?? 10
+                c.minute = (AppGroup.defaults.object(forKey: "recapMinute") as? Int) ?? 0
+                return Calendar.current.date(from: c) ?? Date()
+            },
+            set: { newDate in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                AppGroup.defaults.set(c.hour ?? 10, forKey: "recapHour")
+                AppGroup.defaults.set(c.minute ?? 0, forKey: "recapMinute")
+                RecapNotifier.refresh(sprints: dtos)
+            }
+        )
+    }
 
     // MARK: - Body
 
@@ -79,6 +116,9 @@ struct QuickEntryView: View {
                 Divider().overlay(p.border)
                 recapSection(p, recap)
             }
+
+            Divider().overlay(p.border)
+            recapSettings(p)
         }
         .frame(width: 320)
         .background(p.white)
@@ -228,6 +268,35 @@ struct QuickEntryView: View {
         .padding(16)
     }
 
+    // MARK: - Recap settings
+
+    private func recapSettings(_ p: SBPalette) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 0) {
+                Text("Daily recap")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(p.textNavy)
+                Spacer(minLength: 8)
+                SBToggle(isOn: recapToggle)
+            }
+            if recapEnabled {
+                HStack(spacing: 0) {
+                    Text("Remind me at")
+                        .font(.system(size: 12))
+                        .foregroundStyle(p.grey2)
+                    Spacer(minLength: 8)
+                    DatePicker("", selection: recapTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.field)
+                        .labelsHidden()
+                        .font(.system(size: 12))
+                        .fixedSize()
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
     // MARK: - Empty state (today isn't in any sprint)
 
     private func emptyState(_ p: SBPalette) -> some View {
@@ -265,17 +334,6 @@ struct QuickEntryView: View {
         .padding(.vertical, 22)
     }
 
-    /// Brings the main SprintBuddy window forward (reopening it if it was
-    /// closed) and activates the app.
-    private func openMainApp() {
-        NSApp.activate(ignoringOtherApps: true)
-        if let window = NSApp.windows.first(where: { $0.canBecomeMain && $0.isVisible }) {
-            window.makeKeyAndOrderFront(nil)
-        } else {
-            openWindow(id: "main")
-        }
-    }
-
     // MARK: - Save
 
     private func save() {
@@ -286,7 +344,7 @@ struct QuickEntryView: View {
             DayUpdate(id: UUID().uuidString, type: draftType, text: trimmed, sortIndex: nextIndex)
         )
         try? modelContext.save()
-        RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
+        RecapNotifier.refresh(sprints: dtos)
         draftText = ""
         justSaved = true
         savedResetTask?.cancel()

@@ -11,6 +11,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct SprintRow: View {
     let sprint: Sprint

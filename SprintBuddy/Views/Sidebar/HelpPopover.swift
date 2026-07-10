@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct HelpPopover: View {
     @Environment(\.palette) private var palette

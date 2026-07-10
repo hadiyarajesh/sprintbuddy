@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct DayCell: View {
     let day: DayDTO

@@ -1,9 +1,9 @@
 import Foundation
 
-enum StandupFormatter {
+public enum StandupFormatter {
     private static let typeLabel: [UpdateType: String] = [.done: "Done", .doing: "Doing", .blocker: "Blocker"]
 
-    static func text(_ s: SprintDTO) -> String {
+    public static func text(_ s: SprintDTO) -> String {
         let st = SprintMath.stats(s)
         var lines: [String] = []
         lines.append("\(s.name) \u{2014} \(SprintMath.rangeLabel(s))")

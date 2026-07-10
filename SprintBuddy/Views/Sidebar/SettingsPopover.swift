@@ -30,7 +30,7 @@
 //
 
 import SwiftUI
-import SwiftData
+import SprintBuddyKit
 
 struct SettingsPopover: View {
     @ObservedObject var appState: AppState
@@ -38,55 +38,6 @@ struct SettingsPopover: View {
     var onImport: () -> Void = {}
 
     @Environment(\.palette) private var palette
-    @Query(sort: \Sprint.createdAt, order: .reverse) private var sprints: [Sprint]
-    @State private var launchAtLogin = LoginItems.isEnabled
-
-    /// Toggling on prompts for notification permission; only enables if granted.
-    private var recapBinding: Binding<Bool> {
-        Binding(
-            get: { appState.recapEnabled },
-            set: { newValue in
-                if newValue {
-                    Task {
-                        let granted = await RecapNotifier.requestAuthorization()
-                        appState.recapEnabled = granted
-                        if granted { RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() }) }
-                    }
-                } else {
-                    appState.recapEnabled = false
-                    RecapNotifier.cancel()
-                }
-            }
-        )
-    }
-
-    /// Bridges the recap hour/minute prefs to a `Date` for the time picker.
-    private var recapTimeBinding: Binding<Date> {
-        Binding(
-            get: {
-                var c = DateComponents(); c.hour = appState.recapHour; c.minute = appState.recapMinute
-                return Calendar.current.date(from: c) ?? Date()
-            },
-            set: { newDate in
-                let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                appState.recapHour = c.hour ?? 10
-                appState.recapMinute = c.minute ?? 0
-                RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
-            }
-        )
-    }
-
-    /// Drives the login-item registration and reflects the real resulting
-    /// status (so a failed register/unregister snaps the toggle back).
-    private var launchAtLoginBinding: Binding<Bool> {
-        Binding(
-            get: { launchAtLogin },
-            set: { newValue in
-                LoginItems.setEnabled(newValue)
-                launchAtLogin = LoginItems.isEnabled
-            }
-        )
-    }
 
     private static let themes: [(value: String, label: String)] = [
         ("auto", "Auto"),
@@ -105,30 +56,6 @@ struct SettingsPopover: View {
                 .padding(.bottom, 2)
             toggleRow(title: "Show weekends", isOn: $appState.showWeekends)
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
-
-            sectionLabel("Startup")
-                .padding(.top, 12)
-                .padding(.bottom, 2)
-            toggleRow(title: "Launch at login", isOn: launchAtLoginBinding)
-
-            sectionLabel("Reminders")
-                .padding(.top, 12)
-                .padding(.bottom, 2)
-            toggleRow(title: "Daily recap", isOn: recapBinding)
-            if appState.recapEnabled {
-                HStack(spacing: 0) {
-                    Text("Remind me at")
-                        .font(.system(size: 13))
-                        .foregroundStyle(palette.textNavy)
-                    Spacer(minLength: 8)
-                    DatePicker("", selection: recapTimeBinding, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.field)
-                        .labelsHidden()
-                        .font(.system(size: 13))
-                        .fixedSize()
-                }
-                .padding(.vertical, 7)
-            }
 
             sectionLabel("Data")
                 .padding(.top, 12)

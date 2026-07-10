@@ -1,30 +1,29 @@
 //
 //  RecapNotifier.swift
-//  SprintBuddy
+//  SprintBuddyMenuBar
 //
-//  Schedules the opt-in daily "standup recap" local notification. The content
-//  (most recent logged day) is baked in at schedule time and refreshed on app
-//  launch, data changes, and settings changes — the app is always-on in the
-//  menu bar, so the pending notification stays current. Reads its prefs from
-//  the same UserDefaults keys AppState writes.
+//  Owned by the agent: schedules the opt-in daily "standup recap" local
+//  notification. Content (most recent logged day) is baked in at schedule time
+//  and refreshed on the agent's launch / activation and after logging. Reads
+//  its prefs from the App-Group defaults suite shared with the main app.
 //
 
 import Foundation
 import UserNotifications
+import SprintBuddyKit
 
 enum RecapNotifier {
     private static let identifier = "daily-recap"
     private static var center: UNUserNotificationCenter { .current() }
 
-    private static var enabled: Bool { UserDefaults.standard.bool(forKey: "recapEnabled") }
-    private static var hour: Int { (UserDefaults.standard.object(forKey: "recapHour") as? Int) ?? 10 }
-    private static var minute: Int { (UserDefaults.standard.object(forKey: "recapMinute") as? Int) ?? 0 }
+    private static var enabled: Bool { AppGroup.defaults.bool(forKey: "recapEnabled") }
+    private static var hour: Int { (AppGroup.defaults.object(forKey: "recapHour") as? Int) ?? 10 }
+    private static var minute: Int { (AppGroup.defaults.object(forKey: "recapMinute") as? Int) ?? 0 }
 
     /// Prompts for notification permission. Returns whether it's now allowed.
     @discardableResult
     static func requestAuthorization() async -> Bool {
-        let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
-        return granted
+        (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
     /// (Re)schedules the daily recap from current prefs + data, or cancels it

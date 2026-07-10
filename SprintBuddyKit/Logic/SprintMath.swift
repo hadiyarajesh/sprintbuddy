@@ -1,7 +1,7 @@
 import Foundation
 
-enum SprintMath {
-    static func generateDays(start: String, weeks: Int) -> [String: DayDTO] {
+public enum SprintMath {
+    public static func generateDays(start: String, weeks: Int) -> [String: DayDTO] {
         var out: [String: DayDTO] = [:]
         let s = DateKey.parse(start)
         for i in 0..<(weeks * 7) {
@@ -11,9 +11,14 @@ enum SprintMath {
         return out
     }
 
-    struct Stats: Equatable { var working = 0, logged = 0, leave = 0, holiday = 0 }
+    public struct Stats: Equatable {
+        public var working = 0, logged = 0, leave = 0, holiday = 0
+        public init(working: Int = 0, logged: Int = 0, leave: Int = 0, holiday: Int = 0) {
+            self.working = working; self.logged = logged; self.leave = leave; self.holiday = holiday
+        }
+    }
 
-    static func stats(_ s: SprintDTO) -> Stats {
+    public static func stats(_ s: SprintDTO) -> Stats {
         var out = Stats()
         for (_, day) in s.days {
             switch day.status {
@@ -28,15 +33,15 @@ enum SprintMath {
         return out
     }
 
-    static func progressPct(_ s: SprintDTO) -> Int {
+    public static func progressPct(_ s: SprintDTO) -> Int {
         let st = stats(s)
         guard st.working > 0 else { return 0 }
         return Int((Double(st.logged) / Double(st.working) * 100).rounded())
     }
 
-    enum SprintStatus: String { case active, completed, upcoming }
+    public enum SprintStatus: String { case active, completed, upcoming }
 
-    static func status(_ s: SprintDTO, today: String) -> SprintStatus {
+    public static func status(_ s: SprintDTO, today: String) -> SprintStatus {
         let dates = s.orderedDates
         guard let end = dates.last else { return .upcoming }
         if end < today { return .completed }
@@ -44,7 +49,7 @@ enum SprintMath {
         return .active
     }
 
-    static func dayIndex(_ s: SprintDTO, today: String) -> Int? {
+    public static func dayIndex(_ s: SprintDTO, today: String) -> Int? {
         guard status(s, today: today) == .active else { return nil }
         let total = s.weeks * 7
         var idx = DateKey.daysBetween(DateKey.parse(s.start), DateKey.parse(today)) + 1
@@ -52,7 +57,7 @@ enum SprintMath {
         return idx
     }
 
-    static func defaultDate(_ s: SprintDTO, today: String) -> String? {
+    public static func defaultDate(_ s: SprintDTO, today: String) -> String? {
         let dates = s.orderedDates
         guard !dates.isEmpty else { return nil }
         if s.days[today] != nil { return today }
@@ -60,7 +65,7 @@ enum SprintMath {
         return dates.first
     }
 
-    static func visibleDates(_ s: SprintDTO, showWeekends: Bool) -> [String] {
+    public static func visibleDates(_ s: SprintDTO, showWeekends: Bool) -> [String] {
         let dates = s.orderedDates
         if showWeekends { return dates }
         return dates.filter { !DateKey.isWeekend(DateKey.parse($0)) }
@@ -71,22 +76,22 @@ enum SprintMath {
     private static let wShort = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
     private static let wLong = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 
-    static func monthShort(_ d: Date) -> String { mShort[Calendar.current.component(.month, from: d) - 1] }
-    static func monthLong(_ d: Date) -> String { mLong[Calendar.current.component(.month, from: d) - 1] }
-    static func weekdayShort(_ d: Date) -> String { wShort[DateKey.weekday(d) - 1] }
-    static func weekdayLong(_ d: Date) -> String { wLong[DateKey.weekday(d) - 1] }
-    static func dayOfMonth(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
+    public static func monthShort(_ d: Date) -> String { mShort[Calendar.current.component(.month, from: d) - 1] }
+    public static func monthLong(_ d: Date) -> String { mLong[Calendar.current.component(.month, from: d) - 1] }
+    public static func weekdayShort(_ d: Date) -> String { wShort[DateKey.weekday(d) - 1] }
+    public static func weekdayLong(_ d: Date) -> String { wLong[DateKey.weekday(d) - 1] }
+    public static func dayOfMonth(_ d: Date) -> Int { Calendar.current.component(.day, from: d) }
 
-    static func fmt(_ d: Date) -> String { "\(weekdayShort(d)), \(monthShort(d)) \(dayOfMonth(d))" }
-    static func fmtShort(_ d: Date) -> String { "\(monthShort(d)) \(dayOfMonth(d))" }
+    public static func fmt(_ d: Date) -> String { "\(weekdayShort(d)), \(monthShort(d)) \(dayOfMonth(d))" }
+    public static func fmtShort(_ d: Date) -> String { "\(monthShort(d)) \(dayOfMonth(d))" }
 
-    static func rangeLabel(_ s: SprintDTO) -> String {
+    public static func rangeLabel(_ s: SprintDTO) -> String {
         let dates = s.orderedDates
         guard let a = dates.first, let b = dates.last else { return "" }
         let bd = DateKey.parse(b)
         return "\(fmtShort(DateKey.parse(a))) \u{2013} \(fmtShort(bd)), \(Calendar.current.component(.year, from: bd))"
     }
-    static func rangeShort(_ s: SprintDTO) -> String {
+    public static func rangeShort(_ s: SprintDTO) -> String {
         let dates = s.orderedDates
         guard let a = dates.first, let b = dates.last else { return "" }
         return "\(fmtShort(DateKey.parse(a))) \u{2013} \(fmtShort(DateKey.parse(b)))"

@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import SwiftData
 
 struct OverviewCard: View {

@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct NewSprintSheet: View {
     @Binding var isPresented: Bool

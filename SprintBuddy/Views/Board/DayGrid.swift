@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct DayGrid: View {
     let dto: SprintDTO

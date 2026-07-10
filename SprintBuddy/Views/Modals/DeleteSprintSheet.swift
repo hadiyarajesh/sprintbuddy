@@ -11,6 +11,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct DeleteSprintSheet: View {
     let sprintName: String

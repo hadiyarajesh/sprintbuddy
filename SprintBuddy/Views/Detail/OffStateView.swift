@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct OffStateView: View {
     let status: DayStatus

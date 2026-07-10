@@ -18,6 +18,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 import AppKit
 import SwiftData
 

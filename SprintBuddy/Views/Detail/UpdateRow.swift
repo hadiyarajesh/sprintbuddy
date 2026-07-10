@@ -12,6 +12,7 @@
 //
 
 import SwiftUI
+import SprintBuddyKit
 
 struct UpdateRow: View {
     @Bindable var update: DayUpdate
