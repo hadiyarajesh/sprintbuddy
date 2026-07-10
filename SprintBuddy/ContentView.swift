@@ -68,33 +68,49 @@ struct ContentView: View {
             syncSelection()
         }
         .sheet(isPresented: $appState.newSprintOpen) {
-            NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint)
+            themed { NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint) }
         }
         .sheet(isPresented: $appState.standupOpen) {
-            StandupNotesSheet(
-                text: activeSprint.map { StandupFormatter.text($0.toDTO()) } ?? "",
-                onClose: { appState.standupOpen = false }
-            )
+            themed {
+                StandupNotesSheet(
+                    text: activeSprint.map { StandupFormatter.text($0.toDTO()) } ?? "",
+                    onClose: { appState.standupOpen = false }
+                )
+            }
         }
         .sheet(isPresented: $appState.deleteOpen) {
-            DeleteSprintSheet(
-                sprintName: activeSprint?.name ?? "",
-                onCancel: { appState.deleteOpen = false },
-                onConfirm: confirmDelete
-            )
+            themed {
+                DeleteSprintSheet(
+                    sprintName: activeSprint?.name ?? "",
+                    onCancel: { appState.deleteOpen = false },
+                    onConfirm: confirmDelete
+                )
+            }
         }
         .sheet(isPresented: $appState.importWarnOpen) {
-            ImportWarningSheet(
-                currentCount: sprints.count,
-                pendingCount: appState.pendingImport?.count ?? 0,
-                pendingNames: appState.pendingImport?.map(\.name) ?? [],
-                onCancel: {
-                    appState.pendingImport = nil
-                    appState.importWarnOpen = false
-                },
-                onConfirm: { applyImport(appState.pendingImport ?? []) }
-            )
+            themed {
+                ImportWarningSheet(
+                    currentCount: sprints.count,
+                    pendingCount: appState.pendingImport?.count ?? 0,
+                    pendingNames: appState.pendingImport?.map(\.name) ?? [],
+                    onCancel: {
+                        appState.pendingImport = nil
+                        appState.importWarnOpen = false
+                    },
+                    onConfirm: { applyImport(appState.pendingImport ?? []) }
+                )
+            }
         }
+    }
+
+    /// Sheets present in a separate hosting context that doesn't inherit the
+    /// window's `.preferredColorScheme` or the injected palette, so re-apply
+    /// both to keep modals matching the app's theme.
+    @ViewBuilder
+    private func themed<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .environment(\.palette, palette)
+            .preferredColorScheme(appState.colorSchemePreference)
     }
 
     /// Creates a sprint via `SprintStore`, persists it, and selects it (and
