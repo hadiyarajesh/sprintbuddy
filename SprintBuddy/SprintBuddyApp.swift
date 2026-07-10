@@ -24,11 +24,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct SprintBuddyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    // Owned here (not in ContentView) so it survives the refresh below.
+    @StateObject private var appState = AppState()
+    @State private var refreshID = 0
     private let modelContainer = AppStore.container()
 
     var body: some Scene {
         WindowGroup(id: "main") {
-            ContentView()
+            ContentView(appState: appState)
+                .id(refreshID)
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    // Re-read the shared store when returning to the app, so updates
+                    // logged in the menu-bar agent appear (a cross-process @Query gets
+                    // no live remote-change notification). Rebuilding ContentView
+                    // re-runs its @Query; AppState is retained above so selection stays.
+                    refreshID &+= 1
+                }
         }
         .modelContainer(modelContainer)
         .windowStyle(.hiddenTitleBar)

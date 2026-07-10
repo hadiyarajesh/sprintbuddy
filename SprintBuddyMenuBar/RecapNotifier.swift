@@ -16,9 +16,9 @@ enum RecapNotifier {
     private static let identifier = "daily-recap"
     private static var center: UNUserNotificationCenter { .current() }
 
-    private static var enabled: Bool { AppGroup.defaults.bool(forKey: "recapEnabled") }
-    private static var hour: Int { (AppGroup.defaults.object(forKey: "recapHour") as? Int) ?? 10 }
-    private static var minute: Int { (AppGroup.defaults.object(forKey: "recapMinute") as? Int) ?? 0 }
+    private static var enabled: Bool { AppGroup.defaults.bool(forKey: PrefKey.recapEnabled) }
+    private static var hour: Int { (AppGroup.defaults.object(forKey: PrefKey.recapHour) as? Int) ?? 10 }
+    private static var minute: Int { (AppGroup.defaults.object(forKey: PrefKey.recapMinute) as? Int) ?? 0 }
 
     /// Prompts for notification permission. Returns whether it's now allowed.
     @discardableResult

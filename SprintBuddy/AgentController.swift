@@ -14,8 +14,8 @@ import ServiceManagement
 import SprintBuddyKit
 
 enum AgentController {
-    static let agentBundleID = "com.hadiyarajesh.SprintBuddyMenuBar"
-    private static let key = "showInMenuBar"
+    static let agentBundleID = BundleID.agent
+    private static let key = PrefKey.showInMenuBar
 
     /// Whether the menu-bar agent should be present. Defaults to `true` (on) the
     /// first time, so a fresh install shows the menu bar.
@@ -49,14 +49,20 @@ enum AgentController {
     private static func enable() {
         guard !isAgentRunning else { return }
         let service = SMAppService.loginItem(identifier: agentBundleID)
-        if service.status == .enabled {
-            try? service.unregister()
+        do {
+            if service.status == .enabled { try service.unregister() }
+            try service.register()
+        } catch {
+            NSLog("[SprintBuddy] Failed to register menu-bar agent login item: \(error)")
         }
-        try? service.register()
     }
 
     private static func disable() {
-        try? SMAppService.loginItem(identifier: agentBundleID).unregister()
+        do {
+            try SMAppService.loginItem(identifier: agentBundleID).unregister()
+        } catch {
+            NSLog("[SprintBuddy] Failed to unregister menu-bar agent login item: \(error)")
+        }
         for app in NSRunningApplication.runningApplications(withBundleIdentifier: agentBundleID) {
             app.terminate()
         }

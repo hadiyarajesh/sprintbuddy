@@ -347,14 +347,14 @@ struct DetailPane: View {
         guard !trimmed.isEmpty else { return }
         let nextIndex = (day.updates.map(\.sortIndex).max() ?? -1) + 1
         day.updates.append(DayUpdate(id: UUID().uuidString, type: draftType, text: trimmed, sortIndex: nextIndex))
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         draftText = ""
     }
 
     private func deleteUpdate(_ update: DayUpdate) {
         day.updates.removeAll { $0.id == update.id }
         modelContext.delete(update)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
     }
 }
 

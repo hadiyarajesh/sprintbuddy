@@ -17,7 +17,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Query(sort: \Sprint.createdAt, order: .reverse) private var sprints: [Sprint]
-    @StateObject private var appState = AppState()
+    @ObservedObject var appState: AppState
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
 
@@ -117,7 +117,7 @@ struct ContentView: View {
     /// its default day) so the board renders the new sprint immediately.
     private func createSprint(name: String, focus: String, startISO: String, weeks: Int) {
         let created = SprintStore.createSprint(name: name, focus: focus, startISO: startISO, weeks: weeks, in: modelContext)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         appState.selectedSprintID = created.id
         appState.selectedDateISO = SprintMath.defaultDate(created.toDTO(), today: DateKey.iso(DateKey.today()))
         appState.paneCollapsed = false
@@ -190,7 +190,7 @@ struct ContentView: View {
     /// selects the first imported sprint (and its default day).
     private func applyImport(_ dtos: [SprintDTO]) {
         SprintStore.replaceAll(with: dtos, in: modelContext)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         appState.selectedSprintID = dtos.first?.id
         appState.selectedDateISO = dtos.first.flatMap {
             SprintMath.defaultDate($0, today: DateKey.iso(DateKey.today()))
@@ -211,7 +211,7 @@ struct ContentView: View {
         }
         let deletedID = sprint.id
         modelContext.delete(sprint)
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         let next = sprints
             .filter { $0.id != deletedID }
             .sorted { $0.createdAt > $1.createdAt }
@@ -293,6 +293,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(appState: AppState())
         .modelContainer(for: [Sprint.self, Day.self, DayUpdate.self], inMemory: true)
 }

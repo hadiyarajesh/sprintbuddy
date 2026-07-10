@@ -2,6 +2,15 @@ import Foundation
 import SwiftData
 
 public struct SprintStore {
+    /// Save the context, logging (rather than silently swallowing) any failure.
+    public static func save(_ context: ModelContext) {
+        do {
+            try context.save()
+        } catch {
+            NSLog("[SprintBuddy] ModelContext save failed: \(error)")
+        }
+    }
+
     @discardableResult
     public static func createSprint(name: String, focus: String, startISO: String, weeks: Int,
                                     in context: ModelContext) -> Sprint {

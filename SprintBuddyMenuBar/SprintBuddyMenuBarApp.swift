@@ -14,7 +14,7 @@ import SprintBuddyKit
 import AppKit
 import UserNotifications
 
-let mainAppBundleID = "com.hadiyarajesh.SprintBuddy"
+let mainAppBundleID = BundleID.mainApp
 
 /// Launches (or brings forward) the main windowed app.
 @MainActor

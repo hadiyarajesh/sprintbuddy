@@ -20,31 +20,31 @@ final class AppState: ObservableObject {
     // MARK: - Persisted selection / UI state
 
     @Published var selectedSprintID: String? {
-        didSet { defaults.set(selectedSprintID, forKey: Keys.selectedSprintID) }
+        didSet { defaults.set(selectedSprintID, forKey: PrefKey.selectedSprintID) }
     }
     @Published var selectedDateISO: String? {
-        didSet { defaults.set(selectedDateISO, forKey: Keys.selectedDateISO) }
+        didSet { defaults.set(selectedDateISO, forKey: PrefKey.selectedDateISO) }
     }
     @Published var paneCollapsed: Bool {
-        didSet { defaults.set(paneCollapsed, forKey: Keys.paneCollapsed) }
+        didSet { defaults.set(paneCollapsed, forKey: PrefKey.paneCollapsed) }
     }
     @Published var activeOpen: Bool {
-        didSet { defaults.set(activeOpen, forKey: Keys.activeOpen) }
+        didSet { defaults.set(activeOpen, forKey: PrefKey.activeOpen) }
     }
     @Published var archiveOpen: Bool {
-        didSet { defaults.set(archiveOpen, forKey: Keys.archiveOpen) }
+        didSet { defaults.set(archiveOpen, forKey: PrefKey.archiveOpen) }
     }
 
     // MARK: - Persisted prefs (shared with the agent via the App-Group suite)
 
     @Published var theme: String {
-        didSet { defaults.set(theme, forKey: Keys.theme) }
+        didSet { defaults.set(theme, forKey: PrefKey.theme) }
     }
     @Published var showWeekends: Bool {
-        didSet { defaults.set(showWeekends, forKey: Keys.showWeekends) }
+        didSet { defaults.set(showWeekends, forKey: PrefKey.showWeekends) }
     }
     @Published var highlightUnlogged: Bool {
-        didSet { defaults.set(highlightUnlogged, forKey: Keys.highlightUnlogged) }
+        didSet { defaults.set(highlightUnlogged, forKey: PrefKey.highlightUnlogged) }
     }
 
     // MARK: - Sheet / popover flags (transient, not persisted)
@@ -66,14 +66,14 @@ final class AppState: ObservableObject {
 
     init() {
         let d = AppGroup.defaults
-        selectedSprintID = d.string(forKey: Keys.selectedSprintID)
-        selectedDateISO = d.string(forKey: Keys.selectedDateISO)
-        paneCollapsed = (d.object(forKey: Keys.paneCollapsed) as? Bool) ?? false
-        activeOpen = (d.object(forKey: Keys.activeOpen) as? Bool) ?? true
-        archiveOpen = (d.object(forKey: Keys.archiveOpen) as? Bool) ?? true
-        theme = d.string(forKey: Keys.theme) ?? "auto"
-        showWeekends = (d.object(forKey: Keys.showWeekends) as? Bool) ?? true
-        highlightUnlogged = (d.object(forKey: Keys.highlightUnlogged) as? Bool) ?? true
+        selectedSprintID = d.string(forKey: PrefKey.selectedSprintID)
+        selectedDateISO = d.string(forKey: PrefKey.selectedDateISO)
+        paneCollapsed = (d.object(forKey: PrefKey.paneCollapsed) as? Bool) ?? false
+        activeOpen = (d.object(forKey: PrefKey.activeOpen) as? Bool) ?? true
+        archiveOpen = (d.object(forKey: PrefKey.archiveOpen) as? Bool) ?? true
+        theme = d.string(forKey: PrefKey.theme) ?? "auto"
+        showWeekends = (d.object(forKey: PrefKey.showWeekends) as? Bool) ?? true
+        highlightUnlogged = (d.object(forKey: PrefKey.highlightUnlogged) as? Bool) ?? true
     }
 
     // MARK: - Derived
@@ -85,18 +85,5 @@ final class AppState: ObservableObject {
         case "dark": return .dark
         default: return nil
         }
-    }
-
-    // MARK: - Keys
-
-    private enum Keys {
-        static let selectedSprintID = "selectedSprintID"
-        static let selectedDateISO = "selectedDateISO"
-        static let paneCollapsed = "paneCollapsed"
-        static let activeOpen = "activeOpen"
-        static let archiveOpen = "archiveOpen"
-        static let theme = "theme"
-        static let showWeekends = "showWeekends"
-        static let highlightUnlogged = "highlightUnlogged"
     }
 }

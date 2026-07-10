@@ -24,11 +24,11 @@ struct QuickEntryView: View {
     @State private var typeMenuOpen = false
     @State private var typeMenuHeight: CGFloat = 120
 
-    @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
-    @State private var recapExpanded = AppGroup.defaults.bool(forKey: "recapEnabled")
+    @State private var recapEnabled = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
+    @State private var recapExpanded = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
     // Re-read on each panel open so a theme change in the main app is reflected
     // (a separate process gets no live UserDefaults notification).
-    @State private var themeRaw = AppGroup.defaults.string(forKey: "theme") ?? "auto"
+    @State private var themeRaw = AppGroup.defaults.string(forKey: PrefKey.theme) ?? "auto"
 
     private var todayISO: String { DateKey.iso(DateKey.today()) }
 
@@ -75,12 +75,12 @@ struct QuickEntryView: View {
                     Task {
                         let granted = await RecapNotifier.requestAuthorization()
                         recapEnabled = granted
-                        AppGroup.defaults.set(granted, forKey: "recapEnabled")
+                        AppGroup.defaults.set(granted, forKey: PrefKey.recapEnabled)
                         if granted { RecapNotifier.refresh(sprints: dtos) }
                     }
                 } else {
                     recapEnabled = false
-                    AppGroup.defaults.set(false, forKey: "recapEnabled")
+                    AppGroup.defaults.set(false, forKey: PrefKey.recapEnabled)
                     RecapNotifier.cancel()
                 }
             }
@@ -91,14 +91,14 @@ struct QuickEntryView: View {
         Binding(
             get: {
                 var c = DateComponents()
-                c.hour = (AppGroup.defaults.object(forKey: "recapHour") as? Int) ?? 10
-                c.minute = (AppGroup.defaults.object(forKey: "recapMinute") as? Int) ?? 0
+                c.hour = (AppGroup.defaults.object(forKey: PrefKey.recapHour) as? Int) ?? 10
+                c.minute = (AppGroup.defaults.object(forKey: PrefKey.recapMinute) as? Int) ?? 0
                 return Calendar.current.date(from: c) ?? Date()
             },
             set: { newDate in
                 let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                AppGroup.defaults.set(c.hour ?? 10, forKey: "recapHour")
-                AppGroup.defaults.set(c.minute ?? 0, forKey: "recapMinute")
+                AppGroup.defaults.set(c.hour ?? 10, forKey: PrefKey.recapHour)
+                AppGroup.defaults.set(c.minute ?? 0, forKey: PrefKey.recapMinute)
                 RecapNotifier.refresh(sprints: dtos)
             }
         )
@@ -151,8 +151,8 @@ struct QuickEntryView: View {
         .environment(\.palette, p)
         .preferredColorScheme(themeRaw == "auto" ? nil : effectiveScheme)
         .onAppear {
-            themeRaw = AppGroup.defaults.string(forKey: "theme") ?? "auto"
-            recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
+            themeRaw = AppGroup.defaults.string(forKey: PrefKey.theme) ?? "auto"
+            recapEnabled = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
         }
         .onDisappear { savedResetTask?.cancel() }
     }
@@ -468,7 +468,7 @@ struct QuickEntryView: View {
         target.day.updates.append(
             DayUpdate(id: UUID().uuidString, type: draftType, text: trimmed, sortIndex: nextIndex)
         )
-        try? modelContext.save()
+        SprintStore.save(modelContext)
         RecapNotifier.refresh(sprints: dtos)
         draftText = ""
         justSaved = true
