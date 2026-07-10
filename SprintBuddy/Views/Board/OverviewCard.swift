@@ -50,7 +50,8 @@ struct OverviewCard: View {
     private var headerRow: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(sprint.name)
+                TextField("Sprint name", text: $sprint.name)
+                    .textFieldStyle(.plain)
                     .font(.system(size: 25, weight: .bold))
                     .tracking(-0.3)
                     .foregroundStyle(palette.blue)

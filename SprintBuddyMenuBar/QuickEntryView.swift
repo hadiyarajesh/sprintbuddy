@@ -407,7 +407,17 @@ struct QuickEntryView: View {
                             .datePickerStyle(.field)
                             .labelsHidden()
                             .font(.system(size: 12))
+                            .foregroundStyle(p.textNavy)
+                            .tint(p.blue)
                             .fixedSize()
+                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .background(p.inputSoft)
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .strokeBorder(p.grey6, lineWidth: 1)
+                            )
                     }
                 }
             }

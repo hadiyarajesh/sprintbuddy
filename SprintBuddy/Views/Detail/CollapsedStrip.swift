@@ -35,7 +35,7 @@ struct CollapsedStrip: View {
         .padding(.top, 18)
         .frame(width: 54)
         .frame(maxHeight: .infinity)
-        .background(isHovering ? Color(hex: "eef3fb") : palette.sidebar)
+        .background(isHovering ? palette.hover : palette.sidebar)
         .overlay(alignment: .leading) {
             Rectangle().fill(palette.border).frame(width: 1)
         }
