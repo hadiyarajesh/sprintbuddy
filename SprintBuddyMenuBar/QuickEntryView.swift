@@ -22,6 +22,7 @@ struct QuickEntryView: View {
     @State private var justSaved = false
     @State private var savedResetTask: Task<Void, Never>?
     @State private var typeMenuOpen = false
+    @State private var typeMenuHeight: CGFloat = 120
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: "recapEnabled")
     @State private var recapExpanded = AppGroup.defaults.bool(forKey: "recapEnabled")
@@ -139,7 +140,10 @@ struct QuickEntryView: View {
                             .onTapGesture { typeMenuOpen = false }
                         typeMenuContent(p)
                             .fixedSize()
-                            .offset(x: rect.minX, y: rect.maxY + 4)
+                            .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: { typeMenuHeight = $0 })
+                            // Open upward: the chip sits low in the panel, so a
+                            // downward menu would be clipped by the window's bottom.
+                            .offset(x: rect.minX, y: max(0, rect.minY - typeMenuHeight - 6))
                     }
                 }
             }
