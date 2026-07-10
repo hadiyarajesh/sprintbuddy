@@ -116,6 +116,10 @@ struct SettingsPopover: View {
         .padding(3)
         .background(palette.muted)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(palette.border, lineWidth: 1)
+        )
     }
 
     private func themeButton(value: String, label: String) -> some View {
@@ -131,6 +135,10 @@ struct SettingsPopover: View {
                 .padding(.horizontal, 4)
                 .background(isActive ? palette.white : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(isActive ? palette.border2 : Color.clear, lineWidth: 1)
+                )
                 .shadow(color: isActive ? Color.black.opacity(0.14) : .clear, radius: 3, x: 0, y: 1)
         }
         .buttonStyle(.plain)

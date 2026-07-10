@@ -201,16 +201,48 @@ struct QuickEntryView: View {
                     .strokeBorder(p.grey6, lineWidth: 1)
             )
 
-            HStack(spacing: 6) {
-                ForEach([UpdateType.done, .doing, .blocker], id: \.self) { t in
-                    TypeChipButton(type: t, isSelected: draftType == t, action: { draftType = t })
-                }
+            HStack(spacing: 8) {
+                typeMenu(p)
                 Spacer(minLength: 0)
+                saveButton(p)
             }
-
-            saveButton(p)
         }
         .padding(16)
+    }
+
+    /// Compact Done/Doing/Blocker picker (dropdown) so it fits on the Save row.
+    private func typeMenu(_ p: SBPalette) -> some View {
+        Menu {
+            ForEach([UpdateType.done, .doing, .blocker], id: \.self) { t in
+                Button { draftType = t } label: {
+                    if draftType == t {
+                        Label(UpdateMeta.label(t), systemImage: "checkmark")
+                    } else {
+                        Text(UpdateMeta.label(t))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(UpdateMeta.color(draftType, p))
+                    .frame(width: 7, height: 7)
+                Text(UpdateMeta.label(draftType))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(UpdateMeta.color(draftType, p))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(p.grey3)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(UpdateMeta.tint(draftType, p))
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(UpdateMeta.color(draftType, p), lineWidth: 1))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
     }
 
     private func saveButton(_ p: SBPalette) -> some View {
@@ -224,8 +256,8 @@ struct QuickEntryView: View {
                     .fixedSize()
             }
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
+            .padding(.horizontal, 18)
             .background(justSaved ? p.success : p.blue)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
