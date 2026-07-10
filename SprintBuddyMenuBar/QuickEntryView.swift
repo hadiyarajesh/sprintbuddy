@@ -23,6 +23,7 @@ struct QuickEntryView: View {
     @State private var savedResetTask: Task<Void, Never>?
     @State private var typeMenuOpen = false
     @State private var typeMenuHeight: CGFloat = 120
+    @State private var todayExpanded = false
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
     @State private var recapExpanded = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
@@ -46,12 +47,6 @@ struct QuickEntryView: View {
 
     private var canSave: Bool {
         target != nil && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// The most recent day *before today* that has updates.
-    private var recentRecap: StandupRecap.DayRecap? {
-        let yesterday = DateKey.iso(DateKey.addDays(DateKey.today(), -1))
-        return StandupRecap.mostRecentLogged(dtos, onOrBefore: yesterday)
     }
 
     // MARK: - Theme (honor the shared "theme" pref; fall back to system for "auto")
@@ -125,13 +120,12 @@ struct QuickEntryView: View {
             Divider().overlay(p.border)
             if let target {
                 composer(p, sprint: target.sprint, day: target.day)
+                if !target.day.updates.isEmpty {
+                    Divider().overlay(p.border)
+                    todayUpdatesSection(p, target.day)
+                }
             } else {
                 emptyState(p)
-            }
-
-            if let recap = recentRecap {
-                Divider().overlay(p.border)
-                recapSection(p, recap)
             }
 
             Divider().overlay(p.border)
@@ -186,15 +180,6 @@ struct QuickEntryView: View {
                     .foregroundStyle(p.grey2)
             }
             Spacer(minLength: 0)
-            if let target {
-                Text("\(target.day.updates.count) logged")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(p.grey2)
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 8)
-                    .background(p.chip)
-                    .clipShape(Capsule())
-            }
             quitButton(p)
         }
         .padding(.horizontal, 16)
@@ -342,42 +327,59 @@ struct QuickEntryView: View {
         .opacity(canSave ? 1 : 0.55)
     }
 
-    // MARK: - Recent recap
+    // MARK: - Today's updates (collapsible, today only)
 
-    private func recapSection(_ p: SBPalette, _ recap: StandupRecap.DayRecap) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 7) {
-                Text("RECENT")
-                    .font(.system(size: 11, weight: .bold))
-                    .tracking(0.4)
-                    .foregroundStyle(p.grey2)
-                Text(SprintMath.fmt(DateKey.parse(recap.dateISO)))
-                    .font(.system(size: 11))
-                    .foregroundStyle(p.grey3)
-                Spacer(minLength: 0)
-            }
-            ForEach(Array(recap.updates.prefix(3).enumerated()), id: \.offset) { _, u in
-                HStack(alignment: .top, spacing: 6) {
-                    Circle()
-                        .fill(UpdateMeta.color(u.type, p))
-                        .frame(width: 6, height: 6)
-                        .padding(.top, 5)
-                    Text(u.text)
-                        .font(.system(size: 12))
-                        .foregroundStyle(p.textNavy)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
+    /// A collapsible list of the updates logged for *today* — shown only when
+    /// today has at least one update. Mirrors the DAILY RECAP disclosure style.
+    private func todayUpdatesSection(_ p: SBPalette, _ day: Day) -> some View {
+        let updates = day.updates.sorted { $0.sortIndex < $1.sortIndex }
+        return VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { todayExpanded.toggle() }
+            } label: {
+                HStack(spacing: 7) {
+                    Text("TODAY’S UPDATES")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.4)
+                        .foregroundStyle(p.grey2)
+                    Text("\(updates.count)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(p.grey2)
+                        .padding(.vertical, 1)
+                        .padding(.horizontal, 6)
+                        .background(p.chip)
+                        .clipShape(Capsule())
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(p.grey3)
+                        .rotationEffect(.degrees(todayExpanded ? 0 : -90))
                 }
+                .contentShape(Rectangle())
             }
-            if recap.updates.count > 3 {
-                Text("+\(recap.updates.count - 3) more")
-                    .font(.system(size: 11))
-                    .foregroundStyle(p.grey3)
-                    .padding(.leading, 12)
+            .buttonStyle(.plain)
+
+            if todayExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(updates, id: \.id) { u in
+                        HStack(alignment: .top, spacing: 6) {
+                            Circle()
+                                .fill(UpdateMeta.color(u.type, p))
+                                .frame(width: 6, height: 6)
+                                .padding(.top, 5)
+                            Text(u.text)
+                                .font(.system(size: 12))
+                                .foregroundStyle(p.textNavy)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     // MARK: - Recap settings
