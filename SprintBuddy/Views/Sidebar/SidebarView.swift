@@ -66,7 +66,7 @@ struct SidebarView: View {
             newSprintButton
                 .padding(.horizontal, 14)
                 .padding(.top, 14)
-                .padding(.bottom, 4)
+                .padding(.bottom, 14)
 
             footer
         }

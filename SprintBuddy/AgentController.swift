@@ -34,11 +34,25 @@ enum AgentController {
         if on { enable() } else { disable() }
     }
 
+    private static var isAgentRunning: Bool {
+        !NSRunningApplication.runningApplications(withBundleIdentifier: agentBundleID).isEmpty
+    }
+
     // MARK: - Apply
 
+    /// launchd (via `register()`) is the only reliable way to start the embedded
+    /// login-item helper — `NSWorkspace` can't launch an app nested in
+    /// `Contents/Library/LoginItems`. `register()` launches the helper only on
+    /// the transition into `.enabled`, so when the agent should run but isn't,
+    /// force that transition by re-registering. This is the single launch path,
+    /// so no duplicate processes are spawned.
     private static func enable() {
-        try? SMAppService.loginItem(identifier: agentBundleID).register()
-        launchAgentIfNeeded()
+        guard !isAgentRunning else { return }
+        let service = SMAppService.loginItem(identifier: agentBundleID)
+        if service.status == .enabled {
+            try? service.unregister()
+        }
+        try? service.register()
     }
 
     private static func disable() {
@@ -46,16 +60,5 @@ enum AgentController {
         for app in NSRunningApplication.runningApplications(withBundleIdentifier: agentBundleID) {
             app.terminate()
         }
-    }
-
-    /// Starts the embedded agent now (without stealing focus) if it isn't running.
-    private static func launchAgentIfNeeded() {
-        guard NSRunningApplication.runningApplications(withBundleIdentifier: agentBundleID).isEmpty else { return }
-        let agentURL = Bundle.main.bundleURL
-            .appendingPathComponent("Contents/Library/LoginItems/SprintBuddyMenuBar.app")
-        guard FileManager.default.fileExists(atPath: agentURL.path) else { return }
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = false
-        NSWorkspace.shared.openApplication(at: agentURL, configuration: config)
     }
 }
