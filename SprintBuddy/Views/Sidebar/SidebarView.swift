@@ -63,10 +63,14 @@ struct SidebarView: View {
                 .padding(.bottom, 8)
             }
 
-            newSprintButton
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 14)
+            // When there are no sprints at all, the empty state shows its own
+            // centered "New Sprint" button — hide the sidebar's to avoid two.
+            if !sprints.isEmpty {
+                newSprintButton
+                    .padding(.horizontal, 14)
+                    .padding(.top, 14)
+                    .padding(.bottom, 14)
+            }
 
             footer
         }
