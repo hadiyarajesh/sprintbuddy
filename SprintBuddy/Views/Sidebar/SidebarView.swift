@@ -56,7 +56,11 @@ struct SidebarView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     section(title: "Active", sprints: activeSprints, isOpen: $appState.activeOpen, emptyText: "No active sprints")
-                    section(title: "Archive", sprints: archiveSprints, isOpen: $appState.archiveOpen, emptyText: "No archived sprints")
+                    // Archive is date-derived (a sprint whose last day is past),
+                    // so only surface the section once something has landed there.
+                    if !archiveSprints.isEmpty {
+                        section(title: "Archive", sprints: archiveSprints, isOpen: $appState.archiveOpen, emptyText: "No archived sprints")
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
