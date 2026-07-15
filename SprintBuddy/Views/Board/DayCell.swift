@@ -20,6 +20,9 @@ struct DayCell: View {
     /// Precomputed by the caller: `highlightUnlogged && working && isPast && !logged && !isToday`.
     let notLogged: Bool
     let onSelect: () -> Void
+    /// Double-click: always open the detail pane (regardless of the
+    /// "Auto-open details pane" setting).
+    let onOpen: () -> Void
 
     @Environment(\.palette) private var palette
     @State private var isHovering = false
@@ -152,7 +155,11 @@ struct DayCell: View {
         .animation(.easeOut(duration: 0.15), value: isHovering)
         .onHover { isHovering = $0 }
         .contentShape(Rectangle())
+        // Single click selects immediately (no double-click wait); the second
+        // click of a double-click additionally opens the detail pane. Running
+        // both is harmless — a double-click should select *and* open.
         .onTapGesture(perform: onSelect)
+        .simultaneousGesture(TapGesture(count: 2).onEnded(onOpen))
     }
 
     // MARK: - Header
@@ -312,13 +319,13 @@ struct DayCell: View {
 #Preview("Cell states") {
     let p = SBPalette(.light)
     return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
-        DayCell(day: DayDTO(status: .working, updates: [UpdateDTO(id: "1", type: .done, text: "Shipped the login flow")]), isoDate: "2026-07-06", isToday: false, isSelected: false, notLogged: false, onSelect: {})
-        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-13", isToday: false, isSelected: false, notLogged: false, onSelect: {})
-        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-01", isToday: false, isSelected: false, notLogged: true, onSelect: {})
-        DayCell(day: DayDTO(status: .leave), isoDate: "2026-07-08", isToday: false, isSelected: false, notLogged: false, onSelect: {})
-        DayCell(day: DayDTO(status: .holiday), isoDate: "2026-07-09", isToday: true, isSelected: false, notLogged: false, onSelect: {})
-        DayCell(day: DayDTO(status: .weekend), isoDate: "2026-07-11", isToday: false, isSelected: false, notLogged: false, onSelect: {})
-        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-14", isToday: false, isSelected: true, notLogged: false, onSelect: {})
+        DayCell(day: DayDTO(status: .working, updates: [UpdateDTO(id: "1", type: .done, text: "Shipped the login flow")]), isoDate: "2026-07-06", isToday: false, isSelected: false, notLogged: false, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-13", isToday: false, isSelected: false, notLogged: false, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-01", isToday: false, isSelected: false, notLogged: true, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .leave), isoDate: "2026-07-08", isToday: false, isSelected: false, notLogged: false, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .holiday), isoDate: "2026-07-09", isToday: true, isSelected: false, notLogged: false, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .weekend), isoDate: "2026-07-11", isToday: false, isSelected: false, notLogged: false, onSelect: {}, onOpen: {})
+        DayCell(day: DayDTO(status: .working), isoDate: "2026-07-14", isToday: false, isSelected: true, notLogged: false, onSelect: {}, onOpen: {})
     }
     .padding()
     .background(p.boardGradient)

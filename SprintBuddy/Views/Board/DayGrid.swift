@@ -34,6 +34,10 @@ struct DayGrid: View {
                             // Only auto-expand the detail pane when the pref is on;
                             // otherwise the user opens it via the collapsed strip.
                             if appState.autoOpenDetail { appState.paneCollapsed = false }
+                        },
+                        onOpen: {
+                            appState.selectedDateISO = iso
+                            appState.paneCollapsed = false
                         }
                     )
                 }
