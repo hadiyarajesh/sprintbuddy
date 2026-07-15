@@ -27,6 +27,7 @@ func openMainApp() {
 
 final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        terminateOlderInstances()
         UNUserNotificationCenter.current().delegate = self
         // Login registration is owned by the main app (it registers this
         // embedded helper via SMAppService.loginItem).
@@ -40,6 +41,29 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             self, selector: #selector(appBecameActive),
             name: NSApplication.didBecomeActiveNotification, object: nil
         )
+    }
+
+    /// Single-instance guard: two agent copies can end up running (e.g. a
+    /// login-item instance from one app copy plus one registered by another —
+    /// debug build vs /Applications), each adding a menu-bar icon. The newest
+    /// instance wins: terminate every strictly older instance. Two instances
+    /// launched together converge too — only the newer one acts, and ties
+    /// break by pid. Graceful terminate first; force after a grace period.
+    private func terminateOlderInstances() {
+        let current = NSRunningApplication.current
+        let myStart = current.launchDate ?? Date()
+        let older = NSRunningApplication.runningApplications(withBundleIdentifier: BundleID.agent)
+            .filter { other in
+                guard other.processIdentifier != current.processIdentifier else { return false }
+                let otherStart = other.launchDate ?? .distantPast
+                return otherStart < myStart
+                    || (otherStart == myStart && other.processIdentifier < current.processIdentifier)
+            }
+        guard !older.isEmpty else { return }
+        older.forEach { $0.terminate() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            older.filter { !$0.isTerminated }.forEach { $0.forceTerminate() }
+        }
     }
 
     @objc private func appBecameActive() {
