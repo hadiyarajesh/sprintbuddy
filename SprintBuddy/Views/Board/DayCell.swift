@@ -79,12 +79,11 @@ struct DayCell: View {
         }
 
         // Today / selected emphasis — selected takes precedence over today.
+        // Today is marked by its tinted background, blue date, and the TODAY
+        // pill only; the blue border is reserved for the *selected* day so the
+        // two states can't be confused.
         if isToday && !isSelected {
-            borderColor = p.blue
-            borderWidth = 1.5
-            dashed = false
             bg = p.todayBg
-            showShadow = false
             labelColor = p.blue
         }
         if isSelected {
