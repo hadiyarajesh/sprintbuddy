@@ -9,8 +9,14 @@ set -euo pipefail
 # parent directories from each. The first match wins — so the script is not
 # tied to any one project name.
 #
-# Signing: uses "Apple Development" (a local dev build, not notarized). Adjust
-# or remove the CODE_SIGN_IDENTITY line below if you want different signing.
+# Signing: ad-hoc ("-"), with no provisioning profile. A "Apple Development"
+# signature embeds a development provisioning profile that expires in ~7 days,
+# after which macOS refuses to launch the app ("can't be opened", launchd error
+# 163). Ad-hoc signing has no profile and never expires; the App Sandbox +
+# App Group entitlements are still honored locally. Downloads still need the
+# quarantine flag cleared (xattr -dr com.apple.quarantine) since it isn't
+# notarized. Switch to a Developer ID identity + notarization for friction-free
+# distribution.
 # ----------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,12 +75,15 @@ echo "Scheme:  $SCHEME"
 
 cd "$PROJECT_DIR"
 
+# Build unsigned: xcodebuild refuses to sign a sandboxed / App-Group app
+# without a provisioning profile, so skip signing here and re-sign ad-hoc
+# below (which needs no profile and never expires).
 xcodebuild \
   -project "$PROJECT_FILE" \
   -scheme "$SCHEME" \
   -configuration Release \
   -derivedDataPath "$DERIVED_DATA_DIR" \
-  CODE_SIGN_IDENTITY="Apple Development" \
+  CODE_SIGNING_ALLOWED=NO \
   build
 
 # Locate the built .app (its product name may differ from the scheme).
@@ -85,6 +94,58 @@ if [ -z "$APP_PATH" ]; then
 fi
 APP_NAME="$(basename "$APP_PATH" .app)"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
+
+# --- Ad-hoc re-sign (inside-out) -------------------------------------------
+# Map each product bundle name -> its entitlements file, read from the
+# project's build settings so this stays project-agnostic.
+echo "Signing ad-hoc…"
+ENT_MAP="$(mktemp)"
+xcodebuild -project "$PROJECT_FILE" -scheme "$SCHEME" -configuration Release \
+  -showBuildSettings -json 2>/dev/null | python3 -c '
+import json, sys, os
+for t in json.load(sys.stdin):
+    bs = t.get("buildSettings", {})
+    name = bs.get("FULL_PRODUCT_NAME", "")
+    ent = bs.get("CODE_SIGN_ENTITLEMENTS", "")
+    if name and ent:
+        base = bs.get("PROJECT_DIR", "") or bs.get("SRCROOT", "")
+        path = ent if os.path.isabs(ent) else os.path.join(base, ent)
+        print(f"{name}\t{path}")
+' > "$ENT_MAP"
+
+entitlements_for() {  # basename of bundle -> entitlements path (may be empty)
+  awk -F'\t' -v n="$1" '$1==n {print $2; exit}' "$ENT_MAP"
+}
+
+sign_bundle() {
+  local bundle="$1" ent
+  ent="$(entitlements_for "$(basename "$bundle")")"
+  if [ -n "$ent" ] && [ -f "$ent" ]; then
+    codesign --force --sign - --entitlements "$ent" "$bundle"
+  else
+    codesign --force --sign - "$bundle"
+  fi
+}
+
+# 1) Frameworks and dylibs first, no entitlements. (They don't nest inside
+#    each other here, so relative order among them doesn't matter — they just
+#    all need to be signed before the app bundles that embed them.)
+while IFS= read -r -d '' f; do
+  codesign --force --sign - "$f"
+done < <(find "$APP_PATH" \( -name '*.framework' -o -name '*.dylib' \) -print0)
+
+# 2) Nested apps (e.g. embedded login-item helpers), each with its entitlements.
+while IFS= read -r -d '' nested; do
+  sign_bundle "$nested"
+done < <(find "$APP_PATH" -mindepth 1 -name '*.app' -print0)
+
+# 3) Finally the outer app, with its entitlements.
+sign_bundle "$APP_PATH"
+rm -f "$ENT_MAP"
+
+# Verify before packaging so a bad signature fails the build loudly.
+codesign --verify --deep --strict "$APP_PATH"
+echo "Signature: $(codesign -dvv "$APP_PATH" 2>&1 | grep -E 'Signature|flags' | head -1)"
 
 rm -rf "$DMG_STAGING_DIR" "$DMG_PATH"
 mkdir -p "$DMG_STAGING_DIR"
