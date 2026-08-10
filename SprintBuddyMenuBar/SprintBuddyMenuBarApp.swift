@@ -41,6 +41,16 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             self, selector: #selector(appBecameActive),
             name: NSApplication.didBecomeActiveNotification, object: nil
         )
+        // Roll the recap over at midnight: its content recaps "yesterday", so a
+        // long-resident agent must recompute when the day changes.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(dayChanged),
+            name: .NSCalendarDayChanged, object: nil
+        )
+    }
+
+    @objc private func dayChanged() {
+        DispatchQueue.main.async { [weak self] in self?.rescheduleRecap() }
     }
 
     /// Single-instance guard: two agent copies can end up running (e.g. a

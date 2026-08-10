@@ -3,9 +3,10 @@
 //  SprintBuddyMenuBar
 //
 //  Owned by the agent: schedules the opt-in daily "standup recap" local
-//  notification. Content (most recent logged day) is baked in at schedule time
-//  and refreshed on the agent's launch / activation and after logging. Reads
-//  its prefs from the App-Group defaults suite shared with the main app.
+//  notification. Content (the previous day's updates, or a nudge when nothing
+//  was logged) is baked in at schedule time and refreshed on the agent's
+//  launch / activation, after any save in either app (Darwin signal), and at
+//  midnight. Reads its prefs from the shared defaults suite.
 //
 
 import Foundation
@@ -45,7 +46,11 @@ enum RecapNotifier {
     }
 
     private static func schedule(sprints: [SprintDTO]) {
-        let recap = StandupRecap.mostRecentLogged(sprints, onOrBefore: DateKey.iso(DateKey.today()))
+        // Recap strictly the previous day: show what was logged yesterday, or a
+        // "nothing logged yesterday" nudge. (The agent reschedules on saves from
+        // either app and at midnight, so the baked content stays current.)
+        let yesterday = DateKey.iso(DateKey.addDays(DateKey.today(), -1))
+        let recap = StandupRecap.logged(on: yesterday, in: sprints)
 
         let content = UNMutableNotificationContent()
         content.title = StandupRecap.notificationTitle(recap)

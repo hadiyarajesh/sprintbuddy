@@ -34,6 +34,22 @@ public enum StandupRecap {
         return best
     }
 
+    /// Updates logged exactly on `dateISO`, merged across every sprint that
+    /// covers that day (named after the first sprint that has any). `nil` when
+    /// nothing was logged that day.
+    public static func logged(on dateISO: String, in sprints: [SprintDTO]) -> DayRecap? {
+        var name: String?
+        var updates: [UpdateDTO] = []
+        for sprint in sprints {
+            if let day = sprint.days[dateISO], !day.updates.isEmpty {
+                if name == nil { name = sprint.name }
+                updates.append(contentsOf: day.updates)
+            }
+        }
+        guard let name else { return nil }
+        return DayRecap(dateISO: dateISO, sprintName: name, updates: updates)
+    }
+
     private static let typeLabel: [UpdateType: String] = [.done: "Done", .doing: "Doing", .blocker: "Blocker"]
 
     /// Notification title — names the recapped day, or nudges when there's nothing.
@@ -43,9 +59,11 @@ public enum StandupRecap {
     }
 
     /// Notification body — a short bulleted recap, or a nudge when there's nothing.
+    /// The nil case reads as "yesterday" because the notifier always asks about
+    /// the previous day.
     public static func notificationBody(_ recap: DayRecap?, maxItems: Int = 4) -> String {
         guard let recap else {
-            return "No updates logged recently \u{2014} don\u{2019}t forget to log today."
+            return "Nothing was logged yesterday \u{2014} don\u{2019}t forget to log today."
         }
         var lines = recap.updates.prefix(maxItems).map { "\u{2022} [\(typeLabel[$0.type] ?? "")] \($0.text)" }
         if recap.updates.count > maxItems {

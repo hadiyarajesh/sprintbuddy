@@ -27,6 +27,25 @@ import Foundation
         t.expect(body.contains("[Done] shipped X"), "body lists done update")
         t.expect(body.contains("[Blocker] blocked on Y"), "body lists blocker update")
         t.expect(StandupRecap.notificationTitle(recap).contains("Jul 8"), "title names the day")
+
+        // logged(on:) — exact-day recap used by the notification.
+        t.expect(StandupRecap.logged(on: "2026-07-07", in: [s]) == nil, "no updates that day -> nil")
+        t.expect(StandupRecap.logged(on: "2026-07-08", in: []) == nil, "no sprints -> nil")
+        let day8 = StandupRecap.logged(on: "2026-07-08", in: [s])
+        t.expect(day8 != nil, "exact-day recap found")
+        t.expectEqual(day8!.dateISO, "2026-07-08", "exact-day recap is for the asked day")
+        t.expectEqual(day8!.updates.count, 2, "exact-day recap carries that day's updates")
+
+        // Updates merge across sprints covering the same day.
+        var days2 = SprintMath.generateDays(start: "2026-07-06", weeks: 1)
+        days2["2026-07-08"]!.updates = [UpdateDTO(id: "e", type: .doing, text: "other sprint work")]
+        let s2 = SprintDTO(id: "s2", name: "Sprint 2", start: "2026-07-06", weeks: 1, days: days2)
+        let merged = StandupRecap.logged(on: "2026-07-08", in: [s, s2])
+        t.expectEqual(merged!.updates.count, 3, "merges updates across sprints")
+        t.expectEqual(merged!.sprintName, "Sprint 1", "named after first contributing sprint")
+
+        // Nothing-logged copy says "yesterday".
+        t.expect(StandupRecap.notificationBody(nil).contains("Nothing was logged yesterday"), "nil body mentions yesterday")
         t.summary()
     }
 }
