@@ -9,14 +9,23 @@ set -euo pipefail
 # parent directories from each. The first match wins — so the script is not
 # tied to any one project name.
 #
-# Signing: ad-hoc ("-"), with no provisioning profile. A "Apple Development"
-# signature embeds a development provisioning profile that expires in ~7 days,
-# after which macOS refuses to launch the app ("can't be opened", launchd error
-# 163). Ad-hoc signing has no profile and never expires; the App Sandbox +
-# App Group entitlements are still honored locally. Downloads still need the
-# quarantine flag cleared (xattr -dr com.apple.quarantine) since it isn't
-# notarized. Switch to a Developer ID identity + notarization for friction-free
-# distribution.
+# Signing: prefers "Developer ID Application" when present in the keychain
+# (proper direct distribution), falling back to "Apple Development" (runs
+# locally, but downloads need the quarantine flag cleared). The app is NOT
+# sandboxed and uses no App Groups, so Xcode embeds no provisioning profile —
+# nothing expires (a sandboxed/app-group build would embed a 7-day development
+# profile, after which macOS refuses to launch the app with launchd error 163).
+# Team signing (either identity) keeps SMAppService login items working, which
+# ad-hoc signing does not.
+#
+# Notarization: if an App Store Connect API key is available, the DMG is
+# submitted to Apple and stapled, so downloads open with no Gatekeeper
+# friction. Credentials are discovered as:
+#   key    NOTARY_KEY env var, or a *AuthKey_<KEYID>.p8 in ~/.appstoreconnect
+#          or next to the project
+#   key id NOTARY_KEY_ID env var, or parsed from the key filename
+#   issuer NOTARY_ISSUER env var, or a .notary-issuer file next to the project
+# Without credentials the DMG is still built (just not notarized).
 # ----------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -75,15 +84,28 @@ echo "Scheme:  $SCHEME"
 
 cd "$PROJECT_DIR"
 
-# Build unsigned: xcodebuild refuses to sign a sandboxed / App-Group app
-# without a provisioning profile, so skip signing here and re-sign ad-hoc
-# below (which needs no profile and never expires).
+# Prefer Developer ID when the keychain has one. A manually specified identity
+# conflicts with Xcode's automatic signing, so switch the style to Manual for
+# Developer ID builds (fine here: no capability needs a provisioning profile).
+SIGN_ARGS=()
+if security find-identity -v -p codesigning 2>/dev/null | grep -q "Developer ID Application"; then
+  SIGN_IDENTITY="Developer ID Application"
+  # INJECT_BASE_ENTITLEMENTS=NO drops the get-task-allow (debugger) entitlement
+  # Xcode adds by default — notarization rejects binaries that carry it.
+  SIGN_ARGS=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$SIGN_IDENTITY" OTHER_CODE_SIGN_FLAGS="--timestamp" CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO)
+else
+  SIGN_IDENTITY="Apple Development"
+  echo "note: no Developer ID Application identity found — dev-signing instead" >&2
+  SIGN_ARGS=(CODE_SIGN_IDENTITY="$SIGN_IDENTITY")
+fi
+echo "Signing: $SIGN_IDENTITY"
+
 xcodebuild \
   -project "$PROJECT_FILE" \
   -scheme "$SCHEME" \
   -configuration Release \
   -derivedDataPath "$DERIVED_DATA_DIR" \
-  CODE_SIGNING_ALLOWED=NO \
+  "${SIGN_ARGS[@]}" \
   build
 
 # Locate the built .app (its product name may differ from the scheme).
@@ -95,57 +117,14 @@ fi
 APP_NAME="$(basename "$APP_PATH" .app)"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
 
-# --- Ad-hoc re-sign (inside-out) -------------------------------------------
-# Map each product bundle name -> its entitlements file, read from the
-# project's build settings so this stays project-agnostic.
-echo "Signing ad-hoc…"
-ENT_MAP="$(mktemp)"
-xcodebuild -project "$PROJECT_FILE" -scheme "$SCHEME" -configuration Release \
-  -showBuildSettings -json 2>/dev/null | python3 -c '
-import json, sys, os
-for t in json.load(sys.stdin):
-    bs = t.get("buildSettings", {})
-    name = bs.get("FULL_PRODUCT_NAME", "")
-    ent = bs.get("CODE_SIGN_ENTITLEMENTS", "")
-    if name and ent:
-        base = bs.get("PROJECT_DIR", "") or bs.get("SRCROOT", "")
-        path = ent if os.path.isabs(ent) else os.path.join(base, ent)
-        print(f"{name}\t{path}")
-' > "$ENT_MAP"
-
-entitlements_for() {  # basename of bundle -> entitlements path (may be empty)
-  awk -F'\t' -v n="$1" '$1==n {print $2; exit}' "$ENT_MAP"
-}
-
-sign_bundle() {
-  local bundle="$1" ent
-  ent="$(entitlements_for "$(basename "$bundle")")"
-  if [ -n "$ent" ] && [ -f "$ent" ]; then
-    codesign --force --sign - --entitlements "$ent" "$bundle"
-  else
-    codesign --force --sign - "$bundle"
-  fi
-}
-
-# 1) Frameworks and dylibs first, no entitlements. (They don't nest inside
-#    each other here, so relative order among them doesn't matter — they just
-#    all need to be signed before the app bundles that embed them.)
-while IFS= read -r -d '' f; do
-  codesign --force --sign - "$f"
-done < <(find "$APP_PATH" \( -name '*.framework' -o -name '*.dylib' \) -print0)
-
-# 2) Nested apps (e.g. embedded login-item helpers), each with its entitlements.
-while IFS= read -r -d '' nested; do
-  sign_bundle "$nested"
-done < <(find "$APP_PATH" -mindepth 1 -name '*.app' -print0)
-
-# 3) Finally the outer app, with its entitlements.
-sign_bundle "$APP_PATH"
-rm -f "$ENT_MAP"
-
-# Verify before packaging so a bad signature fails the build loudly.
+# Fail loudly if a provisioning profile snuck back in (it would expire in ~7
+# days and brick the app) or the signature is broken.
+if [ -e "$APP_PATH/Contents/embedded.provisionprofile" ]; then
+  echo "error: build embedded a provisioning profile — a capability requiring" >&2
+  echo "provisioning (sandbox/app groups/...) was probably re-enabled." >&2
+  exit 1
+fi
 codesign --verify --deep --strict "$APP_PATH"
-echo "Signature: $(codesign -dvv "$APP_PATH" 2>&1 | grep -E 'Signature|flags' | head -1)"
 
 rm -rf "$DMG_STAGING_DIR" "$DMG_PATH"
 mkdir -p "$DMG_STAGING_DIR"
@@ -161,3 +140,36 @@ hdiutil create \
   "$DMG_PATH"
 
 echo "Created $DMG_PATH"
+
+# --- Notarize + staple (skipped when credentials are unavailable) -----------
+NOTARY_KEY="${NOTARY_KEY:-$(find "$HOME/.appstoreconnect" "$PROJECT_DIR" -maxdepth 1 -name '*AuthKey_*.p8' 2>/dev/null | head -1)}"
+if [ -z "${NOTARY_KEY_ID:-}" ] && [ -n "$NOTARY_KEY" ]; then
+  # AuthKey_<KEYID>.p8 (possibly with a human-readable prefix)
+  NOTARY_KEY_ID="$(basename "$NOTARY_KEY" .p8 | sed 's/.*AuthKey_//')"
+fi
+if [ -z "${NOTARY_ISSUER:-}" ] && [ -f "$PROJECT_DIR/.notary-issuer" ]; then
+  NOTARY_ISSUER="$(tr -d '[:space:]' < "$PROJECT_DIR/.notary-issuer")"
+fi
+
+if [ "$SIGN_IDENTITY" = "Developer ID Application" ] \
+   && [ -n "$NOTARY_KEY" ] && [ -n "${NOTARY_KEY_ID:-}" ] && [ -n "${NOTARY_ISSUER:-}" ]; then
+  # Sign the DMG itself too, so Gatekeeper sees a signature on the container
+  # as well as the app inside.
+  codesign --force --sign "Developer ID Application" --timestamp "$DMG_PATH"
+  echo "Notarizing (key id $NOTARY_KEY_ID)…"
+  SUBMIT_OUT="$(xcrun notarytool submit "$DMG_PATH" \
+    --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" \
+    --wait 2>&1)" || { printf '%s\n' "$SUBMIT_OUT" >&2; exit 1; }
+  printf '%s\n' "$SUBMIT_OUT" | grep -E "id:|status:" | head -4
+  if ! printf '%s\n' "$SUBMIT_OUT" | grep -q "status: Accepted"; then
+    SUBMISSION_ID="$(printf '%s\n' "$SUBMIT_OUT" | awk '/^ *id:/{print $2; exit}')"
+    echo "error: notarization was not accepted — details:" >&2
+    xcrun notarytool log "$SUBMISSION_ID" \
+      --key "$NOTARY_KEY" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" >&2 || true
+    exit 1
+  fi
+  xcrun stapler staple "$DMG_PATH"
+  echo "Notarized and stapled: $DMG_PATH"
+else
+  echo "note: skipping notarization (need Developer ID signing + NOTARY_KEY/NOTARY_KEY_ID/NOTARY_ISSUER)" >&2
+fi

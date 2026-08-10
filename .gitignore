@@ -4,6 +4,9 @@ build/
 # Distributables — shipped via GitHub Releases, not committed
 *.dmg
 
+# Notarization config (local-only)
+.notary-issuer
+
 # Xcode
 DerivedData/
 *.xcuserstate
