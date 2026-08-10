@@ -19,6 +19,11 @@ struct DayGrid: View {
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
 
+    /// A double-click's first click always runs `onSelect` before `onOpen`
+    /// fires, so `onSelect` records whether this day's pane was already open —
+    /// letting the second click close it (double-click toggles the pane).
+    @State private var doubleClickCloses = false
+
     var body: some View {
         LazyVGrid(columns: columns, spacing: 16) {
             ForEach(SprintMath.visibleDates(dto, showWeekends: appState.showWeekends), id: \.self) { iso in
@@ -30,6 +35,7 @@ struct DayGrid: View {
                         isSelected: iso == appState.selectedDateISO,
                         notLogged: isNotLogged(day, iso),
                         onSelect: {
+                            doubleClickCloses = !appState.paneCollapsed && appState.selectedDateISO == iso
                             appState.selectedDateISO = iso
                             // Only auto-expand the detail pane when the pref is on;
                             // otherwise the user opens it via the collapsed strip.
@@ -37,7 +43,7 @@ struct DayGrid: View {
                         },
                         onOpen: {
                             appState.selectedDateISO = iso
-                            appState.paneCollapsed = false
+                            appState.paneCollapsed = doubleClickCloses
                         }
                     )
                 }
