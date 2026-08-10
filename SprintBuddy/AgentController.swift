@@ -31,7 +31,7 @@ enum AgentController {
     /// Persist the preference and apply it immediately.
     static func setEnabled(_ on: Bool) {
         AppGroup.defaults.set(on, forKey: key)
-        if on { enable() } else { disable() }
+        if on { enable(userInitiated: true) } else { disable() }
     }
 
     private static var isAgentRunning: Bool {
@@ -46,14 +46,25 @@ enum AgentController {
     /// the transition into `.enabled`, so when the agent should run but isn't,
     /// force that transition by re-registering. This is the single launch path,
     /// so no duplicate processes are spawned.
-    private static func enable() {
+    private static func enable(userInitiated: Bool = false) {
         guard !isAgentRunning else { return }
         let service = SMAppService.loginItem(identifier: agentBundleID)
+        // Best-effort only: a stale registration (e.g. left by another app copy
+        // whose bundle no longer exists) can make unregister throw — that must
+        // never abort the register below, so keep it out of the do/catch.
+        if service.status == .enabled {
+            try? service.unregister()
+        }
         do {
-            if service.status == .enabled { try service.unregister() }
             try service.register()
         } catch {
             NSLog("[SprintBuddy] Failed to register menu-bar agent login item: \(error)")
+        }
+        // If the user switched the login item off in System Settings, the app
+        // cannot re-enable it programmatically — take them to the switch (only
+        // when they explicitly toggled, never on plain app launch).
+        if service.status == .requiresApproval, userInitiated {
+            SMAppService.openSystemSettingsLoginItems()
         }
     }
 
