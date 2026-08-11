@@ -66,9 +66,19 @@ struct ContentView: View {
         .frame(minWidth: 1180, minHeight: 720)
         .onChange(of: sprints.map(\.id), initial: true) { _, _ in
             syncSelection()
+            applyWorkCalendarPreference()
+        }
+        .onChange(of: appState.saturdayIsWorkingDay, initial: true) { _, _ in
+            applyWorkCalendarPreference()
         }
         .sheet(isPresented: $appState.newSprintOpen) {
-            themed { NewSprintSheet(isPresented: $appState.newSprintOpen, onCreate: createSprint) }
+            themed {
+                NewSprintSheet(
+                    isPresented: $appState.newSprintOpen,
+                    onCreate: createSprint,
+                    saturdayIsWorkingDay: appState.saturdayIsWorkingDay
+                )
+            }
         }
         .sheet(isPresented: $appState.standupOpen) {
             themed {
@@ -76,6 +86,13 @@ struct ContentView: View {
                     text: activeSprint.map { StandupFormatter.text($0.toDTO()) } ?? "",
                     onClose: { appState.standupOpen = false }
                 )
+            }
+        }
+        .sheet(isPresented: $appState.summaryOpen) {
+            themed {
+                if let sprint = activeSprint {
+                    SprintSummarySheet(sprint: sprint.toDTO(), onClose: { appState.summaryOpen = false })
+                }
             }
         }
         .sheet(isPresented: $appState.deleteOpen) {
@@ -116,7 +133,14 @@ struct ContentView: View {
     /// Creates a sprint via `SprintStore`, persists it, and selects it (and
     /// its default day) so the board renders the new sprint immediately.
     private func createSprint(name: String, focus: String, startISO: String, weeks: Int) {
-        let created = SprintStore.createSprint(name: name, focus: focus, startISO: startISO, weeks: weeks, in: modelContext)
+        let created = SprintStore.createSprint(
+            name: name,
+            focus: focus,
+            startISO: startISO,
+            weeks: weeks,
+            saturdayIsWorkingDay: appState.saturdayIsWorkingDay,
+            in: modelContext
+        )
         SprintStore.save(modelContext)
         appState.selectedSprintID = created.id
         appState.selectedDateISO = SprintMath.defaultDate(created.toDTO(), today: DateKey.iso(DateKey.today()))
@@ -234,6 +258,31 @@ struct ContentView: View {
         }
     }
 
+    /// Keeps active sprint boards aligned with the preferred working calendar.
+    /// A Saturday that already contains work stays visible when the preference
+    /// is turned off, so a saved update is never hidden as an off day.
+    private func applyWorkCalendarPreference() {
+        let today = DateKey.iso(DateKey.today())
+        var changed = false
+
+        for sprint in sprints where SprintMath.status(sprint.toDTO(), today: today) != .completed {
+            for day in sprint.days where DateKey.weekday(DateKey.parse(day.dateISO)) == 7 {
+                if appState.saturdayIsWorkingDay, day.status == .weekend {
+                    day.status = .working
+                    changed = true
+                } else if !appState.saturdayIsWorkingDay,
+                          day.status == .working,
+                          day.updates.isEmpty,
+                          day.privateNote.isEmpty {
+                    day.status = .weekend
+                    changed = true
+                }
+            }
+        }
+
+        if changed { SprintStore.save(modelContext) }
+    }
+
     // MARK: - Regions
 
     private func sidebarRegion(_ p: SBPalette) -> some View {
@@ -255,7 +304,8 @@ struct ContentView: View {
                     sprint: sprint,
                     appState: appState,
                     onDelete: { appState.deleteOpen = true },
-                    onStandup: { appState.standupOpen = true }
+                    onStandup: { appState.standupOpen = true },
+                    onSummary: { appState.summaryOpen = true }
                 )
             } else {
                 EmptyStateView(onNew: { appState.newSprintOpen = true })
@@ -279,7 +329,12 @@ struct ContentView: View {
                         }
                     })
                 } else {
-                    DetailPane(sprint: sprint, day: day, appState: appState)
+                    DetailPane(
+                        sprint: sprint,
+                        day: day,
+                        appState: appState,
+                        isReadOnly: SprintMath.status(sprint.toDTO(), today: DateKey.iso(DateKey.today())) == .completed
+                    )
                 }
             }
             .transition(.move(edge: .trailing))

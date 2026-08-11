@@ -19,9 +19,12 @@ struct OverviewCard: View {
     let today: String
     let onDelete: () -> Void
     let onStandup: () -> Void
+    let onSummary: () -> Void
+    let isReadOnly: Bool
 
     @Environment(\.palette) private var palette
     @State private var isHoveringDelete = false
+    @State private var isHoveringSummary = false
 
     private var status: SprintMath.SprintStatus { SprintMath.status(dto, today: today) }
     private var stats: SprintMath.Stats { SprintMath.stats(dto) }
@@ -51,11 +54,12 @@ struct OverviewCard: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 0) {
                 TextField("Sprint name", text: $sprint.name)
-                    .textFieldStyle(.plain)
+        .textFieldStyle(.plain)
                     .font(.system(size: 25, weight: .bold))
                     .tracking(-0.3)
                     .foregroundStyle(palette.blue)
-                    .lineLimit(1)
+            .lineLimit(1)
+            .disabled(isReadOnly)
 
                 metaRow
                     .padding(.top, 8)
@@ -96,12 +100,35 @@ struct OverviewCard: View {
             .textFieldStyle(.plain)
             .font(.system(size: 14))
             .foregroundStyle(palette.grey1)
-            .frame(maxWidth: 560, alignment: .leading)
+        .frame(maxWidth: 560, alignment: .leading)
+        .disabled(isReadOnly)
     }
 
     private var actionButtons: some View {
         HStack(spacing: 8) {
             IconButton(systemName: "square.and.arrow.up", size: 32, iconSize: 14, action: onStandup)
+                .help("Standup Notes")
+            Button(action: onSummary) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [palette.blue, palette.success],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 32, height: 32)
+                    .background(isHoveringSummary ? palette.blueTint : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                            .strokeBorder(palette.blueTintBorder, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .onHover { isHoveringSummary = $0 }
+            .help("Generate sprint summary")
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
@@ -119,7 +146,7 @@ struct OverviewCard: View {
             .onHover { isHoveringDelete = $0 }
             .help("Delete Sprint")
         }
-        .frame(width: 32 * 2 + 8, alignment: .trailing)
+        .frame(width: 32 * 3 + 16, alignment: .trailing)
     }
 
     // MARK: - Progress row (bar + stat pills)
@@ -200,7 +227,7 @@ struct OverviewCard: View {
 
 #Preview {
     let sprint = Sprint(id: "1", name: "Sprint 24 \u{2014} Checkout Revamp", focus: "Ship the new checkout flow", startISO: "2026-07-06", weeks: 2)
-    return OverviewCard(sprint: sprint, dto: sprint.toDTO(), today: "2026-07-09", onDelete: {}, onStandup: {})
+    return OverviewCard(sprint: sprint, dto: sprint.toDTO(), today: "2026-07-09", onDelete: {}, onStandup: {}, onSummary: {}, isReadOnly: false)
         .padding()
         .frame(width: 900)
         .environment(\.palette, SBPalette(.light))

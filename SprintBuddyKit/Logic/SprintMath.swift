@@ -1,12 +1,12 @@
 import Foundation
 
 public enum SprintMath {
-    public static func generateDays(start: String, weeks: Int) -> [String: DayDTO] {
+    public static func generateDays(start: String, weeks: Int, saturdayIsWorkingDay: Bool = false) -> [String: DayDTO] {
         var out: [String: DayDTO] = [:]
         let s = DateKey.parse(start)
         for i in 0..<(weeks * 7) {
             let d = DateKey.addDays(s, i)
-            out[DateKey.iso(d)] = DayDTO(status: DateKey.isWeekend(d) ? .weekend : .working)
+            out[DateKey.iso(d)] = DayDTO(status: DateKey.isWeekend(d, saturdayIsWorkingDay: saturdayIsWorkingDay) ? .weekend : .working)
         }
         return out
     }
@@ -68,7 +68,7 @@ public enum SprintMath {
     public static func visibleDates(_ s: SprintDTO, showWeekends: Bool) -> [String] {
         let dates = s.orderedDates
         if showWeekends { return dates }
-        return dates.filter { !DateKey.isWeekend(DateKey.parse($0)) }
+        return dates.filter { s.days[$0]?.status != .weekend }
     }
 
     private static let mShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]

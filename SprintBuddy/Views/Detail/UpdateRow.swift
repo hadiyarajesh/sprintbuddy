@@ -13,14 +13,18 @@
 
 import SwiftUI
 import SprintBuddyKit
+import SwiftData
 
 struct UpdateRow: View {
     @Bindable var update: DayUpdate
     let onDelete: () -> Void
+    var isReadOnly = false
 
     @Environment(\.palette) private var palette
+    @Environment(\.modelContext) private var modelContext
     @State private var isEditing = false
     @State private var editText: String = ""
+    @State private var editType: UpdateType = .done
 
     var body: some View {
         Group {
@@ -50,10 +54,12 @@ struct UpdateRow: View {
                 .foregroundStyle(palette.textNavy)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            IconButton(systemName: "pencil", size: 24, iconSize: 12, action: startEdit)
-                .help("Edit")
-            IconButton(systemName: "trash", size: 24, iconSize: 12, hoverBackground: palette.redTint, action: onDelete)
-                .help("Delete")
+            if !isReadOnly {
+                IconButton(systemName: "pencil", size: 24, iconSize: 12, action: startEdit)
+                    .help("Edit")
+                IconButton(systemName: "trash", size: 24, iconSize: 12, hoverBackground: palette.redTint, action: onDelete)
+                    .help("Delete")
+            }
         }
     }
 
@@ -73,6 +79,14 @@ struct UpdateRow: View {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .strokeBorder(palette.grey6, lineWidth: 1)
                 )
+
+            HStack(spacing: 6) {
+                ForEach(UpdateType.allCases, id: \.rawValue) { type in
+                    TypeChipButton(type: type, isSelected: editType == type) {
+                        editType = type
+                    }
+                }
+            }
 
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
@@ -114,6 +128,7 @@ struct UpdateRow: View {
 
     private func startEdit() {
         editText = update.text
+        editType = update.type
         isEditing = true
     }
 
@@ -123,13 +138,14 @@ struct UpdateRow: View {
 
     /// Saving an emptied draft deletes the update (matches the prototype's
     /// `onSaveEdit`, which filters the update out rather than persisting blank text).
-    /// The update's type is left unchanged — it's not editable inline.
     private func saveEdit() {
         let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             onDelete()
         } else {
             update.text = trimmed
+            update.type = editType
+            SprintStore.save(modelContext)
         }
         isEditing = false
     }

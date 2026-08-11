@@ -7,6 +7,14 @@ import Foundation
         t.expectEqual(days["2026-07-04"]!.status, .weekend, "Sat is weekend")   // 2026-07-04 is Sat
         t.expectEqual(days["2026-07-01"]!.status, .working, "Wed is working")
 
+        let sixDayWeek = SprintMath.generateDays(start: "2026-07-01", weeks: 1, saturdayIsWorkingDay: true)
+        t.expectEqual(sixDayWeek["2026-07-04"]!.status, .working, "Sat is working when enabled")
+        let weekdaysOnly = SprintMath.visibleDates(
+            SprintDTO(id: "six-day", name: "n", start: "2026-07-01", weeks: 1, days: sixDayWeek),
+            showWeekends: false
+        )
+        t.expect(weekdaysOnly.contains("2026-07-04"), "working Saturday remains visible when weekends are hidden")
+
         var s = SprintDTO(id: "s", name: "n", start: "2026-07-01", weeks: 2, days: days)
         s.days["2026-07-01"]!.updates = [UpdateDTO(id: "u1", type: .done, text: "x")]
         s.days["2026-07-03"]!.status = .holiday

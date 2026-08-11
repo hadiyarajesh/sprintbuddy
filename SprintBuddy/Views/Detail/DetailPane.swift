@@ -18,6 +18,7 @@ struct DetailPane: View {
     let sprint: Sprint
     @Bindable var day: Day
     @ObservedObject var appState: AppState
+    let isReadOnly: Bool
 
     @Environment(\.palette) private var palette
     @Environment(\.modelContext) private var modelContext
@@ -111,6 +112,12 @@ struct DetailPane: View {
                     .font(.system(size: 11, weight: .bold))
                     .tracking(1)
                     .foregroundStyle(isToday ? palette.blue : palette.grey3)
+                if isReadOnly {
+                    Text("ARCHIVED · READ-ONLY")
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(0.7)
+                        .foregroundStyle(palette.grey3)
+                }
             }
             Spacer(minLength: 0)
             statusChipButton
@@ -164,6 +171,7 @@ struct DetailPane: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(isReadOnly)
         .help("Change day status")
     }
 
@@ -193,6 +201,7 @@ struct DetailPane: View {
     private func statusMenuItem(_ status: DayStatus, icon: String, label: String, color: Color) -> some View {
         Button {
             day.status = status
+            SprintStore.save(modelContext)
             appState.statusMenuOpen = false
         } label: {
             HStack(spacing: 9) {
@@ -241,10 +250,12 @@ struct DetailPane: View {
 
     private var workingContent: some View {
         VStack(alignment: .leading, spacing: 18) {
-            UpdateComposer(draftText: $draftText, draftType: $draftType, onAdd: addUpdate)
+            if !isReadOnly {
+                UpdateComposer(draftText: $draftText, draftType: $draftType, onAdd: addUpdate)
+            }
             updatesCard
             privateNoteSection
-            savedRow
+            if !isReadOnly { savedRow }
         }
     }
 
@@ -275,7 +286,7 @@ struct DetailPane: View {
             } else {
                 VStack(spacing: 6) {
                     ForEach(sortedUpdates, id: \.id) { update in
-                        UpdateRow(update: update, onDelete: { deleteUpdate(update) })
+                        UpdateRow(update: update, onDelete: { deleteUpdate(update) }, isReadOnly: isReadOnly)
                     }
                 }
             }
@@ -303,20 +314,32 @@ struct DetailPane: View {
                     .foregroundStyle(palette.grey3)
             }
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $day.privateNote)
-                    .font(.system(size: 13))
-                    .foregroundStyle(palette.textNavy)
-                    .scrollContentBackground(.hidden)
-                    .padding(6)
-
-                if day.privateNote.isEmpty {
-                    Text("Private reminders \u{2014} never shown on the board or in standup notes")
+            Group {
+                if isReadOnly {
+                    Text(day.privateNote.isEmpty ? "No private note" : day.privateNote)
                         .font(.system(size: 13))
-                        .foregroundStyle(palette.grey4)
+                        .foregroundStyle(day.privateNote.isEmpty ? palette.grey4 : palette.textNavy)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(.horizontal, 11)
-                        .padding(.top, 8)
-                        .allowsHitTesting(false)
+                        .padding(.vertical, 8)
+                        .textSelection(.enabled)
+                } else {
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: $day.privateNote)
+                            .font(.system(size: 13))
+                            .foregroundStyle(palette.textNavy)
+                            .scrollContentBackground(.hidden)
+                            .padding(6)
+
+                        if day.privateNote.isEmpty {
+                            Text("Private reminders \u{2014} never shown on the board or in standup notes")
+                                .font(.system(size: 13))
+                                .foregroundStyle(palette.grey4)
+                                .padding(.horizontal, 11)
+                                .padding(.top, 8)
+                                .allowsHitTesting(false)
+                        }
+                    }
                 }
             }
             .frame(height: 64)
@@ -374,7 +397,7 @@ struct DetailPane: View {
     sprint.days.append(day)
     context.insert(sprint)
 
-    return DetailPane(sprint: sprint, day: day, appState: AppState())
+    return DetailPane(sprint: sprint, day: day, appState: AppState(), isReadOnly: false)
         .frame(height: 760)
         .environment(\.palette, SBPalette(.light))
         .modelContainer(container)
@@ -392,7 +415,7 @@ struct DetailPane: View {
     sprint.days.append(day)
     context.insert(sprint)
 
-    return DetailPane(sprint: sprint, day: day, appState: AppState())
+    return DetailPane(sprint: sprint, day: day, appState: AppState(), isReadOnly: false)
         .frame(height: 760)
         .environment(\.palette, SBPalette(.light))
         .modelContainer(container)

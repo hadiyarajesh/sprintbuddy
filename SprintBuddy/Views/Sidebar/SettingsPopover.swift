@@ -70,6 +70,11 @@ struct SettingsPopover: View {
             toggleRow(title: "Flag unlogged days", isOn: $appState.highlightUnlogged)
             toggleRow(title: "Auto-open details pane", isOn: $appState.autoOpenDetail)
 
+            sectionLabel("Work calendar")
+                .padding(.top, 12)
+                .padding(.bottom, 2)
+            toggleRow(title: "Work on Saturdays", isOn: $appState.saturdayIsWorkingDay)
+
             sectionLabel("Menu Bar")
                 .padding(.top, 12)
                 .padding(.bottom, 2)

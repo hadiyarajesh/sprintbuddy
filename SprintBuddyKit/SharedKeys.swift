@@ -19,6 +19,7 @@ public enum PrefKey {
     // Preferences shared with the agent
     public static let theme = "theme"
     public static let showWeekends = "showWeekends"
+    public static let saturdayIsWorkingDay = "saturdayIsWorkingDay"
     public static let highlightUnlogged = "highlightUnlogged"
     public static let recapEnabled = "recapEnabled"
     public static let recapHour = "recapHour"
@@ -32,4 +33,5 @@ public enum PrefKey {
     public static let activeOpen = "activeOpen"
     public static let archiveOpen = "archiveOpen"
     public static let autoOpenDetail = "autoOpenDetail"
+    public static let sprintSummaryCache = "sprintSummaryCache"
 }

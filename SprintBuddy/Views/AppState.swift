@@ -43,6 +43,10 @@ final class AppState: ObservableObject {
     @Published var showWeekends: Bool {
         didSet { defaults.set(showWeekends, forKey: PrefKey.showWeekends) }
     }
+    /// When on, Saturday is included in the working-week calculation.
+    @Published var saturdayIsWorkingDay: Bool {
+        didSet { defaults.set(saturdayIsWorkingDay, forKey: PrefKey.saturdayIsWorkingDay) }
+    }
     @Published var highlightUnlogged: Bool {
         didSet { defaults.set(highlightUnlogged, forKey: PrefKey.highlightUnlogged) }
     }
@@ -56,6 +60,7 @@ final class AppState: ObservableObject {
 
     @Published var newSprintOpen: Bool = false
     @Published var standupOpen: Bool = false
+    @Published var summaryOpen: Bool = false
     @Published var deleteOpen: Bool = false
     @Published var importWarnOpen: Bool = false
     @Published var settingsOpen: Bool = false
@@ -78,6 +83,7 @@ final class AppState: ObservableObject {
         archiveOpen = (d.object(forKey: PrefKey.archiveOpen) as? Bool) ?? true
         theme = d.string(forKey: PrefKey.theme) ?? "auto"
         showWeekends = (d.object(forKey: PrefKey.showWeekends) as? Bool) ?? true
+        saturdayIsWorkingDay = (d.object(forKey: PrefKey.saturdayIsWorkingDay) as? Bool) ?? false
         highlightUnlogged = (d.object(forKey: PrefKey.highlightUnlogged) as? Bool) ?? true
         autoOpenDetail = (d.object(forKey: PrefKey.autoOpenDetail) as? Bool) ?? true
     }

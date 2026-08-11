@@ -28,5 +28,8 @@ public enum DateKey {
     }
     public static func today() -> Date { noon(Date()) }
     public static func weekday(_ d: Date) -> Int { cal.component(.weekday, from: d) } // 1=Sun...7=Sat
-    public static func isWeekend(_ d: Date) -> Bool { let w = weekday(d); return w == 1 || w == 7 }
+    public static func isWeekend(_ d: Date, saturdayIsWorkingDay: Bool = false) -> Bool {
+        let w = weekday(d)
+        return w == 1 || (w == 7 && !saturdayIsWorkingDay)
+    }
 }

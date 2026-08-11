@@ -21,17 +21,19 @@ struct BoardView: View {
     @ObservedObject var appState: AppState
     let onDelete: () -> Void
     let onStandup: () -> Void
+    let onSummary: () -> Void
 
     var body: some View {
         let dto = sprint.toDTO()
         let today = DateKey.iso(DateKey.today())
+        let isReadOnly = SprintMath.status(dto, today: today) == .completed
 
         // Padding lives INSIDE the ScrollView so the scroll view clips to the
         // full region, not to the content's edges — otherwise the overview
         // card's soft drop shadow gets sliced into hard lines at the top/sides.
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                OverviewCard(sprint: sprint, dto: dto, today: today, onDelete: onDelete, onStandup: onStandup)
+                OverviewCard(sprint: sprint, dto: dto, today: today, onDelete: onDelete, onStandup: onStandup, onSummary: onSummary, isReadOnly: isReadOnly)
                 DayGrid(dto: dto, today: today, appState: appState)
             }
             .frame(maxWidth: 1000, alignment: .leading)
@@ -69,7 +71,7 @@ struct BoardView: View {
     let appState = AppState()
     appState.selectedDateISO = "2026-07-08"
 
-    return BoardView(sprint: sprint, appState: appState, onDelete: {}, onStandup: {})
+    return BoardView(sprint: sprint, appState: appState, onDelete: {}, onStandup: {}, onSummary: {})
         .frame(width: 1100, height: 800)
         .environment(\.palette, SBPalette(.light))
         .modelContainer(container)

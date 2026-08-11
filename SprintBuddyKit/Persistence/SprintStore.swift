@@ -17,10 +17,12 @@ public struct SprintStore {
 
     @discardableResult
     public static func createSprint(name: String, focus: String, startISO: String, weeks: Int,
+                                    saturdayIsWorkingDay: Bool = false,
                                     in context: ModelContext) -> Sprint {
         let dto = SprintDTO(id: "s-\(UUID().uuidString)",
                             name: name, description: focus, start: startISO, weeks: weeks,
-                            days: SprintMath.generateDays(start: startISO, weeks: weeks))
+                            days: SprintMath.generateDays(start: startISO, weeks: weeks,
+                                                          saturdayIsWorkingDay: saturdayIsWorkingDay))
         let sprint = Sprint.from(dto)
         context.insert(sprint)
         return sprint

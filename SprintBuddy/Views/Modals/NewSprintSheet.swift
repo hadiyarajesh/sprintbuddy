@@ -20,6 +20,7 @@ import SprintBuddyKit
 struct NewSprintSheet: View {
     @Binding var isPresented: Bool
     let onCreate: (_ name: String, _ focus: String, _ startISO: String, _ weeks: Int) -> Void
+    let saturdayIsWorkingDay: Bool
 
     @Environment(\.palette) private var palette
 
@@ -85,19 +86,7 @@ struct NewSprintSheet: View {
     private var startDateField: some View {
         VStack(alignment: .leading, spacing: 6) {
             fieldLabel("Start date", required: true)
-            DatePicker("", selection: $startDate, displayedComponents: [.date])
-                .datePickerStyle(.field)
-                .labelsHidden()
-                .font(.system(size: 13))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 7)
-                .padding(.horizontal, 11)
-                .background(palette.inputSoft)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                        .strokeBorder(palette.border2, lineWidth: 1)
-                )
+            SprintStartDatePicker(selection: $startDate)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -105,25 +94,7 @@ struct NewSprintSheet: View {
     private var durationField: some View {
         VStack(alignment: .leading, spacing: 6) {
             fieldLabel("Duration", required: false)
-            Picker("", selection: $weeks) {
-                ForEach(Self.weekOptions, id: \.self) { w in
-                    Text(w == 1 ? "1 week" : "\(w) weeks").tag(w)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .buttonStyle(.borderless)
-            .font(.system(size: 13))
-            .tint(palette.textNavy)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 9)
-            .background(palette.inputSoft)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
-                    .strokeBorder(palette.border2, lineWidth: 1)
-            )
+            SprintDurationPicker(selection: $weeks, options: Self.weekOptions)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -164,31 +135,72 @@ struct NewSprintSheet: View {
     private var previewLine: some View {
         let s = DateKey.parse(startISO)
         let end = DateKey.addDays(s, weeks * 7 - 1)
-        let rows = [
-            "Creates \(weeks * 7) day cards",
-            "\(SprintMath.fmt(s)) \u{2013} \(SprintMath.fmt(end))",
-            "Weekends are marked automatically",
-        ]
-
-        return VStack(alignment: .leading, spacing: 5) {
-            ForEach(rows, id: \.self) { row in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Circle()
-                        .fill(palette.blue)
-                        .frame(width: 4, height: 4)
-                        .offset(y: -2)
-                    Text(row)
-                        .font(.system(size: 12))
+        return VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(palette.blue)
+                    .frame(width: 32, height: 32)
+                    .background(palette.white.opacity(0.7))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sprint plan")
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundStyle(palette.textNavy)
+                    Text("\(SprintMath.fmt(s)) \u{2013} \(SprintMath.fmt(end))")
+                        .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(palette.grey2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                Spacer()
+                Text(weeks == 1 ? "1 week" : "\(weeks) weeks")
+                    .font(.system(size: 11.5, weight: .bold))
+                    .foregroundStyle(palette.blue)
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 9)
+                    .background(palette.white.opacity(0.7))
+                    .clipShape(Capsule())
+            }
+
+            Divider().overlay(palette.blueTintBorder)
+
+            HStack(spacing: 0) {
+                planStat(value: "\(weeks * 7)", label: "day cards", icon: "rectangle.grid.1x2")
+                Rectangle().fill(palette.blueTintBorder).frame(width: 1, height: 28)
+                planStat(value: "\(weeks)", label: weeks == 1 ? "week" : "weeks", icon: "calendar")
+                Rectangle().fill(palette.blueTintBorder).frame(width: 1, height: 28)
+                planStat(
+                    value: "\(weeks * (saturdayIsWorkingDay ? 6 : 5))",
+                    label: "working days",
+                    icon: "briefcase"
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 11)
-        .padding(.horizontal, 12)
+        .padding(14)
         .background(palette.blueTint)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(palette.blueTintBorder, lineWidth: 1)
+        )
+    }
+
+    private func planStat(value: String, label: String, icon: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(palette.blue)
+            Text(value)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(palette.textNavy)
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(palette.grey2)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+        .padding(.horizontal, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Footer
@@ -247,7 +259,40 @@ struct NewSprintSheet: View {
     }
 }
 
+private struct SprintDurationPicker: View {
+    @Binding var selection: Int
+    let options: [Int]
+
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.self) { weeks in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.16)) { selection = weeks }
+                } label: {
+                    Text("\(weeks)w")
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundStyle(selection == weeks ? Color.white : palette.grey2)
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                        .background(selection == weeks ? palette.blue : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help(weeks == 1 ? "1 week sprint" : "\(weeks) week sprint")
+            }
+        }
+        .padding(2)
+        .background(palette.inputSoft)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(palette.border2, lineWidth: 1)
+        )
+    }
+}
+
 #Preview {
-    NewSprintSheet(isPresented: .constant(true)) { _, _, _, _ in }
+    NewSprintSheet(isPresented: .constant(true), onCreate: { _, _, _, _ in }, saturdayIsWorkingDay: false)
     .environment(\.palette, SBPalette(.light))
 }
