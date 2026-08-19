@@ -41,16 +41,38 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             self, selector: #selector(appBecameActive),
             name: NSApplication.didBecomeActiveNotification, object: nil
         )
-        // Roll the recap over at midnight: its content recaps "yesterday", so a
-        // long-resident agent must recompute when the day changes.
+        // The notification's content is baked in when scheduled, so a
+        // long-resident agent has to recompute it whenever the recapped day
+        // moves on. Cover that three ways: the calendar day changing, waking
+        // from sleep (asleep at midnight means no day-change notification),
+        // and a periodic drift check as a backstop.
         NotificationCenter.default.addObserver(
-            self, selector: #selector(dayChanged),
+            self, selector: #selector(recapDayMayHaveChanged),
             name: .NSCalendarDayChanged, object: nil
         )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(recapDayMayHaveChanged),
+            name: NSWorkspace.didWakeNotification, object: nil
+        )
+        driftCheck = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshRecapIfDayChanged() }
+        }
     }
 
-    @objc private func dayChanged() {
-        DispatchQueue.main.async { [weak self] in self?.rescheduleRecap() }
+    /// Backstop timer for recap content drift (see `applicationDidFinishLaunching`).
+    private var driftCheck: Timer?
+
+    @objc private func recapDayMayHaveChanged() {
+        MainActor.assumeIsolated { refreshRecapIfDayChanged() }
+    }
+
+    /// Reschedule only if the day being recapped changed — never churns the
+    /// pending request when nothing moved.
+    @MainActor
+    private func refreshRecapIfDayChanged() {
+        let context = StoreRefresher.shared.container.mainContext
+        let sprints = (try? context.fetch(FetchDescriptor<Sprint>())) ?? []
+        RecapNotifier.refreshIfDayChanged(sprints: sprints.map { $0.toDTO() })
     }
 
     /// Single-instance guard: two agent copies can end up running (e.g. a

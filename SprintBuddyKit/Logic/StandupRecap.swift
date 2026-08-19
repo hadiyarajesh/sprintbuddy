@@ -2,7 +2,7 @@
 //  StandupRecap.swift
 //  SprintBuddyKit
 //
-//  Pure logic for the daily recap: finds the most recent logged day across all
+//  Pure logic for the daily recap: finds the last working day across all
 //  sprints and formats notification title/body text. Foundation-only so it can
 //  be unit-tested with `swiftc` (see tests/logic/StandupRecapTests.swift).
 //
@@ -20,50 +20,44 @@ public enum StandupRecap {
         }
     }
 
-    /// The most recent day (by ISO date, on or before `todayISO`) across all
-    /// sprints that has at least one update. `nil` when nothing has been logged.
-    public static func mostRecentLogged(_ sprints: [SprintDTO], onOrBefore todayISO: String) -> DayRecap? {
-        var best: DayRecap?
+    /// The last day worth recapping before `todayISO`: the most recent working
+    /// day, plus any non-working day that was actually logged on (a Saturday
+    /// you worked still counts). Weekends, holidays, and leave with nothing
+    /// logged are skipped, so Monday's recap reaches back past the weekend to
+    /// Friday rather than reporting an empty Sunday.
+    ///
+    /// Updates are merged across every sprint covering that day. Returns `nil`
+    /// only when no such day exists; `updates` may be empty, meaning it *was* a
+    /// working day but nothing was logged.
+    public static func lastWorkingDay(_ sprints: [SprintDTO], before todayISO: String) -> DayRecap? {
+        var byDate: [String: (name: String, updates: [UpdateDTO])] = [:]
         for sprint in sprints {
-            for (iso, day) in sprint.days where iso <= todayISO && !day.updates.isEmpty {
-                if best == nil || iso > best!.dateISO {
-                    best = DayRecap(dateISO: iso, sprintName: sprint.name, updates: day.updates)
-                }
+            for (iso, day) in sprint.days where iso < todayISO {
+                guard day.status == .working || !day.updates.isEmpty else { continue }
+                var entry = byDate[iso] ?? (name: sprint.name, updates: [])
+                entry.updates.append(contentsOf: day.updates)
+                byDate[iso] = entry
             }
         }
-        return best
-    }
-
-    /// Updates logged exactly on `dateISO`, merged across every sprint that
-    /// covers that day (named after the first sprint that has any). `nil` when
-    /// nothing was logged that day.
-    public static func logged(on dateISO: String, in sprints: [SprintDTO]) -> DayRecap? {
-        var name: String?
-        var updates: [UpdateDTO] = []
-        for sprint in sprints {
-            if let day = sprint.days[dateISO], !day.updates.isEmpty {
-                if name == nil { name = sprint.name }
-                updates.append(contentsOf: day.updates)
-            }
-        }
-        guard let name else { return nil }
-        return DayRecap(dateISO: dateISO, sprintName: name, updates: updates)
+        guard let latest = byDate.keys.max(), let entry = byDate[latest] else { return nil }
+        return DayRecap(dateISO: latest, sprintName: entry.name, updates: entry.updates)
     }
 
     private static let typeLabel: [UpdateType: String] = [.done: "Done", .doing: "Doing", .blocker: "Blocker"]
 
-    /// Notification title — names the recapped day, or nudges when there's nothing.
+    /// Notification title — names the recapped day, or nudges when that day has
+    /// nothing logged.
     public static func notificationTitle(_ recap: DayRecap?) -> String {
-        guard let recap else { return "Time to log your standup" }
+        guard let recap, !recap.updates.isEmpty else { return "Time to log your standup" }
         return "Standup recap \u{2014} \(SprintMath.fmtShort(DateKey.parse(recap.dateISO)))"
     }
 
-    /// Notification body — a short bulleted recap, or a nudge when there's nothing.
-    /// The nil case reads as "yesterday" because the notifier always asks about
-    /// the previous day.
+    /// Notification body — a short bulleted recap, or a nudge naming the day
+    /// that came up empty.
     public static func notificationBody(_ recap: DayRecap?, maxItems: Int = 4) -> String {
-        guard let recap else {
-            return "Nothing was logged yesterday \u{2014} don\u{2019}t forget to log today."
+        guard let recap, !recap.updates.isEmpty else {
+            let when = recap.map { " on \(SprintMath.fmtShort(DateKey.parse($0.dateISO)))" } ?? " recently"
+            return "Nothing was logged\(when) \u{2014} don\u{2019}t forget to log today."
         }
         var lines = recap.updates.prefix(maxItems).map { "\u{2022} [\(typeLabel[$0.type] ?? "")] \($0.text)" }
         if recap.updates.count > maxItems {
