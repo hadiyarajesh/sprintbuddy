@@ -26,7 +26,9 @@ struct QuickEntryView: View {
     @State private var todayExpanded = false
 
     @State private var recapEnabled = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
-    @State private var recapExpanded = AppGroup.defaults.bool(forKey: PrefKey.recapEnabled)
+    // Collapsed by default — the panel is for quick logging; recap settings are
+    // occasional, so they stay tucked away until asked for.
+    @State private var recapExpanded = false
     // Re-read on each panel open so a theme change in the main app is reflected
     // (a separate process gets no live UserDefaults notification).
     @State private var themeRaw = AppGroup.defaults.string(forKey: PrefKey.theme) ?? "auto"
