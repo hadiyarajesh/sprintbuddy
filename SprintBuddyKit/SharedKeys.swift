@@ -25,6 +25,9 @@ public enum PrefKey {
     public static let recapHour = "recapHour"
     public static let recapMinute = "recapMinute"
     public static let showInMenuBar = "showInMenuBar"
+    /// ISO day whose recap notification has already been delivered, so a
+    /// re-arm after sleep or relaunch can't double-notify.
+    public static let recapLastDelivered = "recapLastDelivered"
 
     // Main-app UI state (not read by the agent, but stored in the same suite)
     public static let selectedSprintID = "selectedSprintID"

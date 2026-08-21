@@ -32,20 +32,21 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
         // Login registration is owned by the main app (it registers this
         // embedded helper via SMAppService.loginItem).
         MainActor.assumeIsolated {
-            // When the main app saves, StoreRefresher reloads our container —
-            // recompute the recap from the fresh data too.
-            StoreRefresher.shared.onReload = { [weak self] in self?.rescheduleRecap() }
-            rescheduleRecap()
+            // The recap reads this at delivery time, so it always sees current data.
+            RecapNotifier.dataSource = { Self.currentSprints() }
+            // When the main app saves, StoreRefresher reloads our container.
+            StoreRefresher.shared.onReload = { RecapNotifier.refresh() }
+            RecapNotifier.refresh()
         }
         NotificationCenter.default.addObserver(
             self, selector: #selector(appBecameActive),
             name: NSApplication.didBecomeActiveNotification, object: nil
         )
-        // The notification's content is baked in when scheduled, so a
-        // long-resident agent has to recompute it whenever the recapped day
-        // moves on. Cover that three ways: the calendar day changing, waking
-        // from sleep (asleep at midnight means no day-change notification),
-        // and a periodic drift check as a backstop.
+        // The recap fires from a timer, so re-arm it whenever the clock or the
+        // process could have drifted: the calendar day changing, waking from
+        // sleep (a timer doesn't fire while asleep), and a periodic backstop in
+        // case a timer is ever lost. Re-arming is idempotent, and the content is
+        // built at delivery time, so none of these can produce a stale recap.
         NotificationCenter.default.addObserver(
             self, selector: #selector(recapDayMayHaveChanged),
             name: .NSCalendarDayChanged, object: nil
@@ -54,25 +55,24 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             self, selector: #selector(recapDayMayHaveChanged),
             name: NSWorkspace.didWakeNotification, object: nil
         )
-        driftCheck = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshRecapIfDayChanged() }
+        driftCheck = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { _ in
+            MainActor.assumeIsolated { RecapNotifier.refresh() }
         }
     }
 
-    /// Backstop timer for recap content drift (see `applicationDidFinishLaunching`).
+    /// Backstop timer that keeps the recap armed (see `applicationDidFinishLaunching`).
     private var driftCheck: Timer?
 
     @objc private func recapDayMayHaveChanged() {
-        MainActor.assumeIsolated { refreshRecapIfDayChanged() }
+        MainActor.assumeIsolated { RecapNotifier.refresh() }
     }
 
-    /// Reschedule only if the day being recapped changed — never churns the
-    /// pending request when nothing moved.
+    /// Current sprint data for the recap, read fresh at delivery time.
     @MainActor
-    private func refreshRecapIfDayChanged() {
+    private static func currentSprints() -> [SprintDTO] {
         let context = StoreRefresher.shared.container.mainContext
         let sprints = (try? context.fetch(FetchDescriptor<Sprint>())) ?? []
-        RecapNotifier.refreshIfDayChanged(sprints: sprints.map { $0.toDTO() })
+        return sprints.map { $0.toDTO() }
     }
 
     /// Single-instance guard: two agent copies can end up running (e.g. a
@@ -103,16 +103,8 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             // Opening the panel activates the agent: apply any reload deferred
             // while the panel was open, then refresh the recap.
             StoreRefresher.shared.reloadIfNeeded()
-            rescheduleRecap()
+            RecapNotifier.refresh()
         }
-    }
-
-    /// Recompute the notification content from the shared store.
-    @MainActor
-    private func rescheduleRecap() {
-        let context = StoreRefresher.shared.container.mainContext
-        let sprints = (try? context.fetch(FetchDescriptor<Sprint>())) ?? []
-        RecapNotifier.refresh(sprints: sprints.map { $0.toDTO() })
     }
 
     // Show the recap even when the agent is frontmost.

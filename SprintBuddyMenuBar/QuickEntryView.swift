@@ -85,7 +85,7 @@ struct QuickEntryView: View {
                         let granted = await RecapNotifier.requestAuthorization()
                         recapEnabled = granted
                         AppGroup.defaults.set(granted, forKey: PrefKey.recapEnabled)
-                        if granted { RecapNotifier.refresh(sprints: dtos) }
+                        if granted { RecapNotifier.refresh() }
                     }
                 } else {
                     recapEnabled = false
@@ -108,7 +108,7 @@ struct QuickEntryView: View {
                 let c = Calendar.current.dateComponents([.hour, .minute], from: newDate)
                 AppGroup.defaults.set(c.hour ?? 10, forKey: PrefKey.recapHour)
                 AppGroup.defaults.set(c.minute ?? 0, forKey: PrefKey.recapMinute)
-                RecapNotifier.refresh(sprints: dtos)
+                RecapNotifier.refresh()
             }
         )
     }
@@ -490,7 +490,7 @@ struct QuickEntryView: View {
             DayUpdate(id: UUID().uuidString, type: draftType, text: trimmed, sortIndex: nextIndex)
         )
         SprintStore.save(modelContext)
-        RecapNotifier.refresh(sprints: dtos)
+        RecapNotifier.refresh()
         draftText = ""
         justSaved = true
         savedResetTask?.cancel()

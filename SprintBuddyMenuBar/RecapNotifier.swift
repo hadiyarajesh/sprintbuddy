@@ -2,12 +2,18 @@
 //  RecapNotifier.swift
 //  SprintBuddyMenuBar
 //
-//  Owned by the agent: schedules the opt-in daily "standup recap" local
-//  notification. Content (the last working day's updates, or a nudge naming
-//  that day when nothing was logged) is baked in at schedule time, so it is
-//  refreshed on the agent's launch / activation, after any save in either app
-//  (Darwin signal), at midnight, on wake, and on a periodic drift check.
-//  Reads its prefs from the shared defaults suite.
+//  Owned by the agent: delivers the opt-in daily "standup recap" notification.
+//
+//  Content is built at DELIVERY time, not schedule time. An earlier version
+//  baked the text into a repeating UNCalendarNotificationTrigger, which meant
+//  any missed refresh delivered an older day's recap (e.g. an "Aug 17" recap
+//  arriving on Aug 21). Instead the resident agent arms a timer for the next
+//  recap time and posts an untriggered request when it fires, reading the store
+//  right then — so the text can't be stale by construction.
+//
+//  Prefs come from the shared defaults suite; `PrefKey.recapLastDelivered`
+//  guards against double-notifying when the timer is re-armed after sleep or a
+//  relaunch.
 //
 
 import Foundation
@@ -22,68 +28,88 @@ enum RecapNotifier {
     private static var hour: Int { (AppGroup.defaults.object(forKey: PrefKey.recapHour) as? Int) ?? 10 }
     private static var minute: Int { (AppGroup.defaults.object(forKey: PrefKey.recapMinute) as? Int) ?? 0 }
 
+    private static var lastDelivered: String? {
+        get { AppGroup.defaults.string(forKey: PrefKey.recapLastDelivered) }
+        set { AppGroup.defaults.set(newValue, forKey: PrefKey.recapLastDelivered) }
+    }
+
+    /// Supplies current sprint data, set once by the app delegate. Called at
+    /// delivery time so the recap always reflects the latest store contents.
+    static var dataSource: (() -> [SprintDTO])?
+
+    private static var timer: Timer?
+
     /// Prompts for notification permission. Returns whether it's now allowed.
     @discardableResult
     static func requestAuthorization() async -> Bool {
         (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
-    /// The day the pending notification currently recaps ("none" when it
-    /// recaps nothing), used to detect drift without rescheduling needlessly.
-    private static var scheduledFor: String?
-
-    /// Reschedules only when the day being recapped has moved on — safe to call
-    /// on a timer, since it won't remove and re-add the pending request near
-    /// its delivery time (which risks dropping that day's notification).
-    static func refreshIfDayChanged(sprints: [SprintDTO]) {
+    /// Arms (or re-arms) the recap timer. Idempotent and cheap — call on launch,
+    /// on wake, when the day changes, and after any pref change.
+    static func refresh() {
+        timer?.invalidate()
+        timer = nil
         guard enabled else { return }
-        guard target(for: sprints) != scheduledFor else { return }
-        refresh(sprints: sprints)
-    }
-
-    private static func target(for sprints: [SprintDTO]) -> String {
-        StandupRecap.lastWorkingDay(sprints, before: DateKey.iso(DateKey.today()))?.dateISO ?? "none"
-    }
-
-    /// (Re)schedules the daily recap from current prefs + data, or cancels it
-    /// when the setting is off or permission isn't granted.
-    static func refresh(sprints: [SprintDTO]) {
-        guard enabled else { cancel(); return }
         center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .provisional:
-                schedule(sprints: sprints)
-            default:
-                cancel()
+            let allowed = settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional
+            DispatchQueue.main.async {
+                if allowed { arm() } else { cancel() }
             }
         }
     }
 
     static func cancel() {
-        scheduledFor = nil
+        timer?.invalidate()
+        timer = nil
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
-    private static func schedule(sprints: [SprintDTO]) {
-        // Recap the last working day — skipping weekends/holidays/leave that
-        // weren't logged — so Monday's recap reaches back to Friday. (The agent
-        // reschedules on saves from either app, at midnight, and on wake, so
-        // the baked content stays current.)
-        let recap = StandupRecap.lastWorkingDay(sprints, before: DateKey.iso(DateKey.today()))
-        scheduledFor = recap?.dateISO ?? "none"
+    // MARK: - Timing
+
+    private static func arm() {
+        let now = Date()
+        let calendar = Calendar.current
+        guard let todayFire = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) else { return }
+        let todayISO = DateKey.iso(DateKey.today())
+
+        if now >= todayFire {
+            if lastDelivered == nil {
+                // First time set up, after today's time — don't back-fill a
+                // recap the moment the feature is switched on.
+                lastDelivered = todayISO
+            } else if lastDelivered != todayISO {
+                // Missed today's slot (asleep, or the agent wasn't running).
+                deliver()
+            }
+        }
+
+        let next = now < todayFire
+            ? todayFire
+            : (calendar.date(byAdding: .day, value: 1, to: todayFire) ?? todayFire.addingTimeInterval(86_400))
+        let scheduled = Timer(fire: next, interval: 0, repeats: false) { _ in
+            deliver()
+            arm()   // chain to the following day
+        }
+        RunLoop.main.add(scheduled, forMode: .common)
+        timer = scheduled
+    }
+
+    /// Builds and posts the notification from current data. Reuses one
+    /// identifier so only the latest recap sits in Notification Center.
+    private static func deliver() {
+        let todayISO = DateKey.iso(DateKey.today())
+        guard enabled, lastDelivered != todayISO else { return }
+        let recap = StandupRecap.lastWorkingDay(dataSource?() ?? [], before: todayISO)
 
         let content = UNMutableNotificationContent()
         content.title = StandupRecap.notificationTitle(recap)
         content.body = StandupRecap.notificationBody(recap)
         content.sound = .default
 
-        var when = DateComponents()
-        when.hour = hour
-        when.minute = minute
-        let trigger = UNCalendarNotificationTrigger(dateMatching: when, repeats: true)
-        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
-        center.add(request)
+        lastDelivered = todayISO
+        NSLog("[SprintBuddy] Delivering recap: \(content.title)")
+        center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
     }
 }
