@@ -28,6 +28,9 @@ Built with SwiftUI + SwiftData for macOS.
 - **Light / dark / auto** appearance, plus "show weekends" and "flag
   unlogged days" view options.
 
+## Download
+Download the app from [Release](https://github.com/hadiyarajesh/sprintbuddy/releases/) page.
+
 ## Requirements
 
 - macOS 26.5 or later
