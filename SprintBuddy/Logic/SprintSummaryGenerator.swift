@@ -58,6 +58,7 @@ enum SprintSummaryGenerator {
     #if canImport(FoundationModels)
     /// Each status is summarized independently. That makes the status in the
     /// source data authoritative instead of asking the model to classify it.
+    @available(macOS 26.0, *)
     private static func section(title: String, status: UpdateType, sprint: SprintDTO) async throws -> String {
         let updates = updates(for: sprint, status: status)
         guard !updates.isEmpty else { return "## \(title)\n- Nothing logged." }

@@ -28,13 +28,41 @@ Built with SwiftUI + SwiftData for macOS.
 - **Light / dark / auto** appearance, plus "show weekends" and "flag
   unlogged days" view options.
 
+## Preview
+
+SprintBuddy is designed to feel at home in macOS, with a carefully matched
+light and dark appearance throughout the board, detail drawer, and quick
+logger.
+
+### Sprint board
+
+| Light | Dark |
+| :---: | :---: |
+| ![SprintBuddy sprint board in light mode](Assets/sprintbuddy_home_light_theme.png) | ![SprintBuddy sprint board in dark mode](Assets/sprintbuddy_home_dark_theme.png) |
+
+### Detail drawer
+
+| Light | Dark |
+| :---: | :---: |
+| ![SprintBuddy detail drawer in light mode](Assets/sprintbuddy_home_with_drawer_light_theme.png) | ![SprintBuddy detail drawer in dark mode](Assets/sprintbuddy_home_with_drawer_dark_theme.png) |
+
+### Menu-bar quick logger
+
+| Light | Dark |
+| :---: | :---: |
+| ![SprintBuddy menu-bar quick logger in light mode](Assets/sprintbuddy_menubar_app_light_theme.png) | ![SprintBuddy menu-bar quick logger in dark mode](Assets/sprintbuddy_menubar_app_dark_theme.png) |
+
 ## Download
-Download the app from [Release](https://github.com/hadiyarajesh/sprintbuddy/releases/) page.
+
+Download the latest version from the [Releases page](https://github.com/hadiyarajesh/sprintbuddy/releases/).
 
 ## Requirements
 
-- macOS 26.5 or later
-- Xcode 26 or later (Swift 5)
+- macOS 14 (Sonoma) or later
+- Xcode 16 or later (Swift 5)
+
+> On-device sprint summaries additionally require macOS 26 and Apple
+> Intelligence. All other features work on macOS 14 and later.
 
 ## Build & run
 
@@ -48,31 +76,27 @@ xcodebuild -project SprintBuddy.xcodeproj -scheme SprintBuddy \
 
 ## Architecture
 
-- **Models / Logic** (`SprintBuddy/Models`, `SprintBuddy/Logic`,
-  `SprintBuddy/Persistence/SprintBuddyCodec.swift`) — Foundation-only value
-  types and pure functions (date math, sprint stats/status, standup
-  formatting, JSON codec). These carry unit tests under `tests/logic/`,
-  runnable with `swiftc`.
-- **Storage** (`SprintBuddy/Storage`, `SprintBuddy/Persistence`) — SwiftData
-  `@Model` types (`Sprint`, `Day`, `DayUpdate`) plus a store/bridge that maps
-  to and from the Codable DTOs.
-- **Views** (`SprintBuddy/Views`) — the three-region window (sidebar ·
-  board · collapsible detail pane), the modals, and the menu-bar quick entry.
-- **Theme** (`SprintBuddy/Theme`) — a `ColorScheme`-resolved palette and
-  shared components.
+- **Native interface** — SwiftUI provides a focused, responsive macOS
+  experience for planning sprints and reviewing progress.
+- **Local data** — SwiftData keeps your sprints and daily updates on your Mac,
+  making the app fast, private, and available offline.
+- **Core logic** — small, deterministic Swift types power progress tracking,
+  standup generation, and import/export, keeping those features reliable and
+  easy to evolve.
+- **Menu-bar companion** — a lightweight quick logger shares the same data so
+  you can capture an update without opening the main window.
 
 ## Tests
 
-The pure logic layer is covered by standalone `swiftc` test runners:
+Core behavior is covered by lightweight tests for dates, sprint calculations,
+standup formatting, and import/export. The tests focus on the app's rules,
+keeping them fast to run and independent of the macOS interface.
 
-```bash
-swiftc -o /tmp/sb-codec \
-  SprintBuddy/Models/DateKey.swift \
-  SprintBuddy/Models/DomainDTO.swift \
-  SprintBuddy/Logic/SprintMath.swift \
-  SprintBuddy/Persistence/SprintBuddyCodec.swift \
-  tests/logic/TestSupport.swift tests/logic/CodecTests.swift && /tmp/sb-codec
-```
+## Contribution
 
-(Swap the last test file for `DateKeyTests.swift`, `DomainDTOTests.swift`,
-`SprintMathTests.swift`, or `StandupFormatterTests.swift` to run the others.)
+Contributions are welcome. Please open an issue for bugs or feature ideas, or
+submit a pull request with a clear description of your change.
+
+## License
+
+Released under the [MIT License](LICENSE).
