@@ -37,9 +37,10 @@ struct QuickEntryView: View {
 
     private var dtos: [SprintDTO] { sprints.map { $0.toDTO() } }
 
-    /// The sprint that covers today (most recently created wins) and today's `Day`.
+    /// The sprint that covers today (most recently created wins) and today's
+    /// `Day`. A sprint archived by hand is read-only, so it's skipped.
     private var target: (sprint: Sprint, day: Day)? {
-        for sprint in sprints {
+        for sprint in sprints where sprint.archiveOverride != true {
             if let day = sprint.days.first(where: { $0.dateISO == todayISO }) {
                 return (sprint, day)
             }

@@ -64,6 +64,18 @@ struct ContentView: View {
         .environment(\.palette, p)
         .preferredColorScheme(appState.colorSchemePreference)
         .frame(minWidth: 1180, minHeight: 720)
+        .background {
+            // Esc collapses the detail pane. A key-equivalent button fires even
+            // while a text field has focus; sheets and popovers live in their
+            // own windows, so their Esc still dismisses them first.
+            if !appState.paneCollapsed {
+                Button("Close details") {
+                    withAnimation(.easeInOut(duration: 0.22)) { appState.paneCollapsed = true }
+                }
+                .keyboardShortcut(.cancelAction)
+                .hidden()
+            }
+        }
         .onChange(of: sprints.map(\.id), initial: true) { _, _ in
             syncSelection()
             applyWorkCalendarPreference()
@@ -78,6 +90,20 @@ struct ContentView: View {
                     onCreate: createSprint,
                     saturdayIsWorkingDay: appState.saturdayIsWorkingDay
                 )
+            }
+        }
+        .sheet(isPresented: $appState.editSprintOpen) {
+            themed {
+                if let sprint = activeSprint {
+                    NewSprintSheet(
+                        isPresented: $appState.editSprintOpen,
+                        onCreate: { name, focus, startISO, weeks in
+                            editSprint(sprint, name: name, focus: focus, startISO: startISO, weeks: weeks)
+                        },
+                        saturdayIsWorkingDay: appState.saturdayIsWorkingDay,
+                        existing: sprint.toDTO()
+                    )
+                }
             }
         }
         .sheet(isPresented: $appState.standupOpen) {
@@ -145,6 +171,36 @@ struct ContentView: View {
         appState.selectedSprintID = created.id
         appState.selectedDateISO = SprintMath.defaultDate(created.toDTO(), today: DateKey.iso(DateKey.today()))
         appState.paneCollapsed = false
+    }
+
+    /// Saves edits from the "Edit Sprint" sheet. If the selected day dropped
+    /// out of the new range, selection falls back to the sprint's default day.
+    private func editSprint(_ sprint: Sprint, name: String, focus: String, startISO: String, weeks: Int) {
+        let today = DateKey.iso(DateKey.today())
+        SprintStore.updateSprint(
+            sprint,
+            name: name,
+            focus: focus,
+            startISO: startISO,
+            weeks: weeks,
+            saturdayIsWorkingDay: appState.saturdayIsWorkingDay,
+            today: today,
+            in: modelContext
+        )
+        SprintStore.save(modelContext)
+        if let iso = appState.selectedDateISO, !sprint.days.contains(where: { $0.dateISO == iso }) {
+            appState.selectedDateISO = SprintMath.defaultDate(sprint.toDTO(), today: today)
+        }
+    }
+
+    /// Manually archives or restores a sprint, opening its destination
+    /// section so it doesn't look like it vanished.
+    private func toggleArchive(_ sprint: Sprint) {
+        let today = DateKey.iso(DateKey.today())
+        let archiving = !sprint.isArchived(today: today)
+        SprintStore.setArchived(archiving, sprint, today: today)
+        SprintStore.save(modelContext)
+        if archiving { appState.archiveOpen = true } else { appState.activeOpen = true }
     }
 
     // MARK: - Export / Import / Delete
@@ -265,7 +321,7 @@ struct ContentView: View {
         let today = DateKey.iso(DateKey.today())
         var changed = false
 
-        for sprint in sprints where SprintMath.status(sprint.toDTO(), today: today) != .completed {
+        for sprint in sprints where !sprint.isArchived(today: today) {
             for day in sprint.days where DateKey.weekday(DateKey.parse(day.dateISO)) == 7 {
                 if appState.saturdayIsWorkingDay, day.status == .weekend {
                     day.status = .working
@@ -292,6 +348,8 @@ struct ContentView: View {
             sprints: sprints,
             appState: appState,
             onNewSprint: { appState.newSprintOpen = true },
+            onEdit: { select($0); appState.editSprintOpen = true },
+            onToggleArchive: toggleArchive,
             onExport: exportData,
             onImport: importData
         )
@@ -304,6 +362,7 @@ struct ContentView: View {
                     sprint: sprint,
                     appState: appState,
                     onDelete: { appState.deleteOpen = true },
+                    onEdit: { appState.editSprintOpen = true },
                     onStandup: { appState.standupOpen = true },
                     onSummary: { appState.summaryOpen = true }
                 )
@@ -333,13 +392,20 @@ struct ContentView: View {
                         sprint: sprint,
                         day: day,
                         appState: appState,
-                        isReadOnly: SprintMath.status(sprint.toDTO(), today: DateKey.iso(DateKey.today())) == .completed
+                        isReadOnly: sprint.isArchived(today: DateKey.iso(DateKey.today()))
                     )
                 }
             }
             .transition(.move(edge: .trailing))
             .animation(.easeInOut(duration: 0.22), value: appState.paneCollapsed)
         }
+    }
+
+    /// Makes `sprint` the board's sprint (used by sidebar row actions).
+    private func select(_ sprint: Sprint) {
+        guard appState.selectedSprintID != sprint.id else { return }
+        appState.selectedSprintID = sprint.id
+        appState.selectedDateISO = SprintMath.defaultDate(sprint.toDTO(), today: DateKey.iso(DateKey.today()))
     }
 
     private func detailDateLong(_ day: Day) -> String {

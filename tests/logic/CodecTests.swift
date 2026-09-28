@@ -12,6 +12,13 @@ import Foundation
         if case .success(let back) = SprintBuddyCodec.decode(data) {
             t.expectEqual(back.count, 1, "round-trip 1 sprint")
             t.expectEqual(back[0].days.count, 7, "round-trip 7 days")
+            t.expectEqual(back[0].archived, nil, "no archive pin round-trips as nil")
+        } else { t.expect(false, "valid data should decode") }
+
+        var pinned = sprint
+        pinned.archived = false
+        if case .success(let back) = SprintBuddyCodec.decode(try! SprintBuddyCodec.encode([pinned])) {
+            t.expectEqual(back[0].archived, false, "archive pin round-trips")
         } else { t.expect(false, "valid data should decode") }
 
         if case .failure(let e) = SprintBuddyCodec.decode("not json".data(using: .utf8)!) {

@@ -29,6 +29,25 @@ import Foundation
         t.expectEqual(SprintMath.status(s, today: "2026-06-01"), .upcoming, "future -> upcoming")
         t.expectEqual(SprintMath.dayIndex(s, today: "2026-07-05"), 5, "day 5 of 14")
         t.expectEqual(SprintMath.defaultDate(s, today: "2026-07-05"), "2026-07-05", "today is default")
+
+        // Archiving: dates by default, a manual pin wins either way.
+        t.expect(!SprintMath.isArchived(s, today: "2026-07-05"), "running sprint not archived")
+        t.expect(SprintMath.isArchived(s, today: "2026-07-30"), "ended sprint auto-archives")
+        var pinned = s
+        pinned.archived = true
+        t.expect(SprintMath.isArchived(pinned, today: "2026-07-05"), "manual archive of a running sprint")
+        pinned.archived = false
+        t.expect(!SprintMath.isArchived(pinned, today: "2026-07-30"), "manual unarchive of an ended sprint")
+        t.expectEqual(SprintMath.archiveOverride(true, for: s, today: "2026-07-05"), true, "archive early is pinned")
+        t.expectEqual(SprintMath.archiveOverride(false, for: s, today: "2026-07-05"), nil, "unarchive while running follows dates")
+        t.expectEqual(SprintMath.archiveOverride(false, for: s, today: "2026-07-30"), false, "unarchive after end is pinned")
+        t.expectEqual(SprintMath.archiveOverride(true, for: s, today: "2026-07-30"), nil, "archive after end follows dates")
+
+        // Re-dating: only days with content outside the new range count.
+        s.days["2026-07-01"]!.privateNote = "note"
+        t.expectEqual(SprintMath.loggedDatesOutside(s, start: "2026-07-01", weeks: 2), [], "same range drops nothing")
+        t.expectEqual(SprintMath.loggedDatesOutside(s, start: "2026-07-03", weeks: 1), ["2026-07-01"],
+                      "moving start later drops the logged day, not the empty leave day")
         t.summary()
     }
 }

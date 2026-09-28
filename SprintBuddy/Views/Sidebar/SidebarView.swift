@@ -26,6 +26,8 @@ struct SidebarView: View {
     let sprints: [Sprint]
     @ObservedObject var appState: AppState
     let onNewSprint: () -> Void
+    var onEdit: (Sprint) -> Void = { _ in }
+    var onToggleArchive: (Sprint) -> Void = { _ in }
     var onExport: () -> Void = {}
     var onImport: () -> Void = {}
 
@@ -34,17 +36,17 @@ struct SidebarView: View {
 
     private var todayISO: String { DateKey.iso(DateKey.today()) }
 
-    /// Sprints that are not yet completed (active or upcoming), newest start first.
+    /// Sprints not archived (active, upcoming, or restored by hand), newest start first.
     private var activeSprints: [Sprint] {
         sprints
-            .filter { SprintMath.status($0.toDTO(), today: todayISO) != .completed }
+            .filter { !$0.isArchived(today: todayISO) }
             .sorted { $0.startISO > $1.startISO }
     }
 
-    /// Completed sprints, newest start first.
+    /// Archived sprints (ended, or archived by hand), newest start first.
     private var archiveSprints: [Sprint] {
         sprints
-            .filter { SprintMath.status($0.toDTO(), today: todayISO) == .completed }
+            .filter { $0.isArchived(today: todayISO) }
             .sorted { $0.startISO > $1.startISO }
     }
 
@@ -56,8 +58,7 @@ struct SidebarView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     section(title: "Active", sprints: activeSprints, isOpen: $appState.activeOpen, emptyText: "No active sprints")
-                    // Archive is date-derived (a sprint whose last day is past),
-                    // so only surface the section once something has landed there.
+                    // Only surface Archive once something has landed there.
                     if !archiveSprints.isEmpty {
                         section(title: "Archive", sprints: archiveSprints, isOpen: $appState.archiveOpen, emptyText: "No archived sprints")
                     }
@@ -140,6 +141,7 @@ struct SidebarView: View {
                                 isSelected: sprint.id == appState.selectedSprintID,
                                 onSelect: { select(sprint) }
                             )
+                            .contextMenu { rowMenu(sprint) }
                         }
                     }
                     .padding(.top, 4)
@@ -147,6 +149,15 @@ struct SidebarView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func rowMenu(_ sprint: Sprint) -> some View {
+        let archived = sprint.isArchived(today: todayISO)
+        if !archived {
+            Button("Edit Sprint\u{2026}") { onEdit(sprint) }
+        }
+        Button(archived ? "Unarchive" : "Archive") { onToggleArchive(sprint) }
     }
 
     private func select(_ sprint: Sprint) {

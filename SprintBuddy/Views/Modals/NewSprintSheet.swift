@@ -13,6 +13,10 @@
 //  of this view each time the sheet is presented, so the fields always start
 //  blank/default without any extra reset plumbing.
 //
+//  Passing `existing` turns it into the "Edit Sprint" form: fields start from
+//  that sprint, and moving its dates warns about logged days that would drop
+//  out of the new range.
+//
 
 import SwiftUI
 import SprintBuddyKit
@@ -21,16 +25,37 @@ struct NewSprintSheet: View {
     @Binding var isPresented: Bool
     let onCreate: (_ name: String, _ focus: String, _ startISO: String, _ weeks: Int) -> Void
     let saturdayIsWorkingDay: Bool
+    var existing: SprintDTO? = nil
 
     @Environment(\.palette) private var palette
 
-    @State private var name: String = ""
-    @State private var focus: String = ""
-    @State private var startDate: Date = DateKey.today()
-    @State private var weeks: Int = 2
+    @State private var name: String
+    @State private var focus: String
+    @State private var startDate: Date
+    @State private var weeks: Int
     @State private var nameError: String? = nil
 
     private static let weekOptions = [1, 2, 3, 4]
+
+    init(isPresented: Binding<Bool>,
+         onCreate: @escaping (_ name: String, _ focus: String, _ startISO: String, _ weeks: Int) -> Void,
+         saturdayIsWorkingDay: Bool,
+         existing: SprintDTO? = nil) {
+        _isPresented = isPresented
+        self.onCreate = onCreate
+        self.saturdayIsWorkingDay = saturdayIsWorkingDay
+        self.existing = existing
+        _name = State(initialValue: existing?.name ?? "")
+        _focus = State(initialValue: existing?.description ?? "")
+        _startDate = State(initialValue: existing.map { DateKey.parse($0.start) } ?? DateKey.today())
+        _weeks = State(initialValue: existing?.weeks ?? 2)
+    }
+
+    /// Logged days the current date choice would delete (edit mode only).
+    private var droppedDates: [String] {
+        guard let existing else { return [] }
+        return SprintMath.loggedDatesOutside(existing, start: startISO, weeks: weeks)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -45,6 +70,7 @@ struct NewSprintSheet: View {
             }
 
             previewLine
+            if !droppedDates.isEmpty { dropWarning }
             footer
         }
         .padding(24)
@@ -56,7 +82,7 @@ struct NewSprintSheet: View {
     // MARK: - Header
 
     private var header: some View {
-        Text("New Sprint")
+        Text(existing == nil ? "New Sprint" : "Edit Sprint")
             .font(.system(size: 16, weight: .semibold))
             .foregroundStyle(palette.textNavy)
     }
@@ -185,6 +211,29 @@ struct NewSprintSheet: View {
         )
     }
 
+    private var dropWarning: some View {
+        let dates = droppedDates.map { SprintMath.fmtShort(DateKey.parse($0)) }
+        let count = dates.count == 1 ? "1 logged day" : "\(dates.count) logged days"
+        return HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(palette.error)
+                .padding(.top, 1)
+            Text("\(count) (\(dates.joined(separator: ", "))) fall outside these dates. Their updates and notes will be deleted.")
+                .font(.system(size: 11.5))
+                .foregroundStyle(palette.error)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(palette.redTint)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .strokeBorder(palette.redTintBorder, lineWidth: 1)
+        )
+    }
+
     private func planStat(value: String, label: String, icon: String) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
@@ -234,12 +283,12 @@ struct NewSprintSheet: View {
 
     private var createButton: some View {
         Button(action: submit) {
-            Text("Create Sprint")
+            Text(existing == nil ? "Create Sprint" : "Save Changes")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
-                .background(palette.blue)
+                .background(droppedDates.isEmpty ? palette.blue : palette.error)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         }
         .buttonStyle(.plain)

@@ -50,12 +50,15 @@ public struct SprintDTO: Codable, Equatable {
     public var start: String
     public var weeks: Int
     public var days: [String: DayDTO]
+    /// Manual archive override: `nil` follows the dates (see `SprintMath.isArchived`).
+    public var archived: Bool?
 
-    public init(id: String, name: String, description: String = "", start: String, weeks: Int, days: [String: DayDTO]) {
+    public init(id: String, name: String, description: String = "", start: String, weeks: Int,
+                days: [String: DayDTO], archived: Bool? = nil) {
         self.id = id; self.name = name; self.description = description
-        self.start = start; self.weeks = weeks; self.days = days
+        self.start = start; self.weeks = weeks; self.days = days; self.archived = archived
     }
-    enum CodingKeys: String, CodingKey { case id, name, description, start, weeks, days }
+    enum CodingKeys: String, CodingKey { case id, name, description, start, weeks, days, archived }
     public init(from dec: Decoder) throws {
         let c = try dec.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
@@ -64,6 +67,7 @@ public struct SprintDTO: Codable, Equatable {
         start = try c.decode(String.self, forKey: .start)
         weeks = try c.decode(Int.self, forKey: .weeks)
         days = try c.decode([String: DayDTO].self, forKey: .days)
+        archived = try? c.decodeIfPresent(Bool.self, forKey: .archived)
     }
     public var orderedDates: [String] { days.keys.sorted() }
 }

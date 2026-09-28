@@ -8,11 +8,22 @@ import SwiftData
     public var startISO: String = ""
     public var weeks: Int = 2
     public var createdAt: Date = Date()
+    /// Manual archive override (schema V2): `nil` follows the dates.
+    public var archiveOverride: Bool? = nil
     @Relationship(deleteRule: .cascade, inverse: \Day.sprint) public var days: [Day] = []
 
-    public init(id: String, name: String, focus: String, startISO: String, weeks: Int, createdAt: Date = Date()) {
+    public init(id: String, name: String, focus: String, startISO: String, weeks: Int,
+                createdAt: Date = Date(), archiveOverride: Bool? = nil) {
         self.id = id; self.name = name; self.focus = focus
         self.startISO = startISO; self.weeks = weeks; self.createdAt = createdAt
+        self.archiveOverride = archiveOverride
+    }
+
+    /// Same rule as `SprintMath.isArchived`, without building a DTO.
+    public func isArchived(today: String) -> Bool {
+        if let archiveOverride { return archiveOverride }
+        guard let end = days.map(\.dateISO).max() else { return false }
+        return end < today
     }
 
     public func toDTO() -> SprintDTO {
@@ -22,11 +33,13 @@ import SwiftData
                 .map { UpdateDTO(id: $0.id, type: $0.type, text: $0.text) }
             dayMap[d.dateISO] = DayDTO(status: d.status, privateNote: d.privateNote, updates: ups)
         }
-        return SprintDTO(id: id, name: name, description: focus, start: startISO, weeks: weeks, days: dayMap)
+        return SprintDTO(id: id, name: name, description: focus, start: startISO, weeks: weeks, days: dayMap,
+                         archived: archiveOverride)
     }
 
     public static func from(_ dto: SprintDTO) -> Sprint {
-        let s = Sprint(id: dto.id, name: dto.name, focus: dto.description, startISO: dto.start, weeks: dto.weeks)
+        let s = Sprint(id: dto.id, name: dto.name, focus: dto.description, startISO: dto.start, weeks: dto.weeks,
+                       archiveOverride: dto.archived)
         for iso in dto.orderedDates {
             let dd = dto.days[iso]!
             let day = Day(dateISO: iso, status: dd.status, privateNote: dd.privateNote)

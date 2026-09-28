@@ -18,6 +18,7 @@ struct OverviewCard: View {
     let dto: SprintDTO
     let today: String
     let onDelete: () -> Void
+    let onEdit: () -> Void
     let onStandup: () -> Void
     let onSummary: () -> Void
     let isReadOnly: Bool
@@ -74,7 +75,10 @@ struct OverviewCard: View {
     }
 
     private var metaRow: some View {
-        let style = OverviewCard.statusStyle(status, palette)
+        // A sprint archived by hand before its end date reads "Archived", not "Active".
+        let style = isReadOnly && status != .completed
+            ? (dot: palette.grey4, bg: palette.muted, text: palette.grey1, label: "Archived")
+            : OverviewCard.statusStyle(status, palette)
 
         return HStack(spacing: 10) {
             StatusPill(label: style.label, dotColor: style.dot, textColor: style.text, background: style.bg)
@@ -106,6 +110,10 @@ struct OverviewCard: View {
 
     private var actionButtons: some View {
         HStack(spacing: 8) {
+            if !isReadOnly {
+                IconButton(systemName: "pencil", size: 32, iconSize: 14, action: onEdit)
+                    .help("Edit Sprint")
+            }
             IconButton(systemName: "square.and.arrow.up", size: 32, iconSize: 14, action: onStandup)
                 .help("Standup Notes")
             Button(action: onSummary) {
@@ -146,7 +154,7 @@ struct OverviewCard: View {
             .onHover { isHoveringDelete = $0 }
             .help("Delete Sprint")
         }
-        .frame(width: 32 * 3 + 16, alignment: .trailing)
+        .fixedSize()
     }
 
     // MARK: - Progress row (bar + stat pills)
@@ -227,7 +235,7 @@ struct OverviewCard: View {
 
 #Preview {
     let sprint = Sprint(id: "1", name: "Sprint 24 \u{2014} Checkout Revamp", focus: "Ship the new checkout flow", startISO: "2026-07-06", weeks: 2)
-    return OverviewCard(sprint: sprint, dto: sprint.toDTO(), today: "2026-07-09", onDelete: {}, onStandup: {}, onSummary: {}, isReadOnly: false)
+    return OverviewCard(sprint: sprint, dto: sprint.toDTO(), today: "2026-07-09", onDelete: {}, onEdit: {}, onStandup: {}, onSummary: {}, isReadOnly: false)
         .padding()
         .frame(width: 900)
         .environment(\.palette, SBPalette(.light))

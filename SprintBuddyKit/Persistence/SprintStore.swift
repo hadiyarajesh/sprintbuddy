@@ -28,6 +28,38 @@ public struct SprintStore {
         return sprint
     }
 
+    /// Applies edited sprint details. Re-dating keeps every day still inside
+    /// the new range untouched (status, updates, note), adds fresh days for
+    /// the new dates, and deletes days that fall outside it.
+    public static func updateSprint(_ sprint: Sprint, name: String, focus: String, startISO: String, weeks: Int,
+                                    saturdayIsWorkingDay: Bool = false, today: String,
+                                    in context: ModelContext) {
+        sprint.name = name
+        sprint.focus = focus
+        guard startISO != sprint.startISO || weeks != sprint.weeks else { return }
+
+        let wanted = SprintMath.generateDays(start: startISO, weeks: weeks, saturdayIsWorkingDay: saturdayIsWorkingDay)
+        for day in sprint.days where wanted[day.dateISO] == nil {
+            context.delete(day)
+        }
+        sprint.days.removeAll { wanted[$0.dateISO] == nil }
+        let kept = Set(sprint.days.map(\.dateISO))
+        for iso in wanted.keys.sorted() where !kept.contains(iso) {
+            sprint.days.append(Day(dateISO: iso, status: wanted[iso]!.status))
+        }
+        sprint.startISO = startISO
+        sprint.weeks = weeks
+        // A manual pin that now matches what the new dates give is dropped, so
+        // the sprint goes back to following its dates.
+        if let pinned = sprint.archiveOverride {
+            sprint.archiveOverride = SprintMath.archiveOverride(pinned, for: sprint.toDTO(), today: today)
+        }
+    }
+
+    public static func setArchived(_ archived: Bool, _ sprint: Sprint, today: String) {
+        sprint.archiveOverride = SprintMath.archiveOverride(archived, for: sprint.toDTO(), today: today)
+    }
+
     public static func replaceAll(with dtos: [SprintDTO], in context: ModelContext) {
         let existing = (try? context.fetch(FetchDescriptor<Sprint>())) ?? []
         existing.forEach { context.delete($0) }

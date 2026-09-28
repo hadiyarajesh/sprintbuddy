@@ -50,20 +50,23 @@ public enum AppGroup {
     }
 }
 
-/// Versioned schema so future model changes can migrate instead of crashing.
-public enum SprintBuddySchemaV1: VersionedSchema {
-    public static var versionIdentifier = Schema.Version(1, 0, 0)
+/// Schema V2 adds `Sprint.archiveOverride`. The live model classes always
+/// describe the newest version; older versions are frozen copies in
+/// `SchemaV1.swift` so SwiftData can recognise stores written by them.
+public enum SprintBuddySchemaV2: VersionedSchema {
+    public static var versionIdentifier = Schema.Version(2, 0, 0)
     public static var models: [any PersistentModel.Type] { [Sprint.self, Day.self, DayUpdate.self] }
 }
 
-/// One stage per released schema version. V1 is the baseline (no stages yet).
 public enum SprintBuddyMigrationPlan: SchemaMigrationPlan {
-    public static var schemas: [any VersionedSchema.Type] { [SprintBuddySchemaV1.self] }
-    public static var stages: [MigrationStage] { [] }
+    public static var schemas: [any VersionedSchema.Type] { [SprintBuddySchemaV1.self, SprintBuddySchemaV2.self] }
+    public static var stages: [MigrationStage] {
+        [.lightweight(fromVersion: SprintBuddySchemaV1.self, toVersion: SprintBuddySchemaV2.self)]
+    }
 }
 
 public enum AppStore {
-    private static let schema = Schema(versionedSchema: SprintBuddySchemaV1.self)
+    private static let schema = Schema(versionedSchema: SprintBuddySchemaV2.self)
 
     /// `~/Library/Application Support/SprintBuddy` — shared by both processes
     /// now that neither is sandboxed.

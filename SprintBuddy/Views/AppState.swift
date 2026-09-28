@@ -59,6 +59,7 @@ final class AppState: ObservableObject {
     // MARK: - Sheet / popover flags (transient, not persisted)
 
     @Published var newSprintOpen: Bool = false
+    @Published var editSprintOpen: Bool = false
     @Published var standupOpen: Bool = false
     @Published var summaryOpen: Bool = false
     @Published var deleteOpen: Bool = false
