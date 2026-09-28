@@ -63,6 +63,8 @@ public struct StatPill: View {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(palette.grey1)
+                .lineLimit(1)
+                .fixedSize()
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 11)

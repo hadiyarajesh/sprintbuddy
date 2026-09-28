@@ -25,6 +25,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // such a fossil re-delivers its frozen content daily forever. Nothing
         // is ever legitimately pending here, so sweep unconditionally.
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        // A new window makes its first text field — the sprint name — first
+        // responder with the text selected, so one stray keystroke would
+        // rename the sprint. Start each main window with nothing focused. The
+        // launch window is already key by now, so handle existing windows too.
+        keyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            (note.object as? NSWindow).map { self?.clearInitialFocus($0) }
+        }
+        NSApp.windows.filter(\.isKeyWindow).forEach(clearInitialFocus)
+    }
+
+    private var keyObserver: NSObjectProtocol?
+    private var unfocusedWindows = Set<ObjectIdentifier>()
+
+    /// Once per main window. Sheets are skipped: focusing their first field is wanted.
+    private func clearInitialFocus(_ window: NSWindow) {
+        guard window.canBecomeMain, window.sheetParent == nil,
+              unfocusedWindows.insert(ObjectIdentifier(window)).inserted else { return }
+        DispatchQueue.main.async { window.makeFirstResponder(nil) }
     }
 
     func applicationDidResignActive(_ notification: Notification) {
