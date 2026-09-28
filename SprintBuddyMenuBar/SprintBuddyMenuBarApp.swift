@@ -36,7 +36,12 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
             RecapNotifier.dataSource = { Self.currentSprints() }
             // When the main app saves, StoreRefresher reloads our container.
             StoreRefresher.shared.onReload = { RecapNotifier.refresh() }
-            RecapNotifier.refresh()
+        }
+        // Sweep fossilized pending requests (logging what was found) before the
+        // first refresh arms the timer — refresh() also sweeps, so chaining
+        // keeps the launch log from being raced into silence.
+        RecapNotifier.clearLegacyPending {
+            MainActor.assumeIsolated { RecapNotifier.refresh() }
         }
         NotificationCenter.default.addObserver(
             self, selector: #selector(appBecameActive),

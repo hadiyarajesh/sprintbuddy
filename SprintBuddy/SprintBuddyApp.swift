@@ -14,11 +14,17 @@ import SwiftUI
 import SwiftData
 import SprintBuddyKit
 import AppKit
+import UserNotifications
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Register + launch the menu-bar agent if "Show in Menu Bar" is on.
         AgentController.syncOnLaunch()
+        // The agent owns the recap notification since the process split, but a
+        // pre-split version scheduled repeating notifications from THIS bundle;
+        // such a fossil re-delivers its frozen content daily forever. Nothing
+        // is ever legitimately pending here, so sweep unconditionally.
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
 
     func applicationDidResignActive(_ notification: Notification) {

@@ -45,11 +45,31 @@ enum RecapNotifier {
         (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
     }
 
+    /// One-time-per-launch sweep: log and remove every pending request. The
+    /// delivery-time design schedules nothing, so any pending request was baked
+    /// by an older version — a repeating one re-delivers its frozen content
+    /// every day forever (the "Standup recap — Jul 29 arriving in late August"
+    /// bug). Removal only reaches THIS app copy's registration, so each copy
+    /// (installed, Xcode debug, build products) must run this once itself.
+    static func clearLegacyPending(then completion: @escaping () -> Void = {}) {
+        center.getPendingNotificationRequests { reqs in
+            if !reqs.isEmpty {
+                let titles = reqs.map { "\($0.identifier): \($0.content.title)" }
+                NSLog("[SprintBuddy] Clearing \(reqs.count) legacy pending notification(s): \(titles.joined(separator: " | "))")
+            }
+            center.removeAllPendingNotificationRequests()
+            DispatchQueue.main.async(execute: completion)
+        }
+    }
+
     /// Arms (or re-arms) the recap timer. Idempotent and cheap — call on launch,
     /// on wake, when the day changes, and after any pref change.
     static func refresh() {
         timer?.invalidate()
         timer = nil
+        // Nothing is ever legitimately pending (delivery is timer-driven), so
+        // keep this registration permanently clean of older versions' bakes.
+        center.removeAllPendingNotificationRequests()
         guard enabled else { return }
         center.getNotificationSettings { settings in
             let allowed = settings.authorizationStatus == .authorized
