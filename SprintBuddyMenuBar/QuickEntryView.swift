@@ -370,9 +370,10 @@ struct QuickEntryView: View {
                                 .fill(UpdateMeta.color(u.type, p))
                                 .frame(width: 6, height: 6)
                                 .padding(.top, 5)
-                            Text(u.text)
+                            Text(LinkText.attributed(u.text))
                                 .font(.system(size: 12))
                                 .foregroundStyle(p.textNavy)
+                                .tint(p.blue)
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
                         }

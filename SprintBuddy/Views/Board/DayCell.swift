@@ -258,7 +258,8 @@ struct DayCell: View {
                         .fill(UpdateMeta.color(update.type, palette))
                         .frame(width: 6, height: 6)
                         .padding(.top, 5)
-                    Text(update.text)
+                    // Short link labels, but not clickable: a click here selects the day.
+                    Text(LinkText.attributed(update.text, linked: false))
                         .font(.system(size: 12))
                         .foregroundStyle(palette.textNavy)
                         .lineLimit(2)

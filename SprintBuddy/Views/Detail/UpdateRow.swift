@@ -49,9 +49,10 @@ struct UpdateRow: View {
         HStack(alignment: .top, spacing: 9) {
             TypeTag(type: update.type)
                 .padding(.top, 1)
-            Text(update.text)
+            Text(LinkText.attributed(update.text))
                 .font(.system(size: 13))
                 .foregroundStyle(palette.textNavy)
+                .tint(palette.blue)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if !isReadOnly {
