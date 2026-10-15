@@ -69,7 +69,11 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificat
     private var driftCheck: Timer?
 
     @objc private func recapDayMayHaveChanged() {
-        MainActor.assumeIsolated { RecapNotifier.refresh() }
+        // NSCalendarDayChanged is posted on a background queue at midnight,
+        // so asserting main-actor isolation here crashed the agent nightly.
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { RecapNotifier.refresh() }
+        }
     }
 
     /// Current sprint data for the recap, read fresh at delivery time.
