@@ -21,6 +21,9 @@ import Foundation
         t.expect(!LinkText.segments(in: "mail me@example.com").contains { if case .link = $0 { return true }; return false },
                  "email addresses are not turned into links")
 
+        t.expectEqual(LinkText.linkCount(in: "Merge PR\n1. \(pr)\n2. https://example.com/a."), 2, "counts every link")
+        t.expectEqual(LinkText.linkCount(in: "no links, just me@example.com"), 0, "no links counts zero")
+
         let linked = LinkText.attributed("see \(pr)")
         t.expectEqual(String(linked.characters), "see phoenix-flutter/pull/42", "display text uses the short label")
         t.expectEqual(linked.runs.compactMap(\.link).first, URL(string: pr), "full URL is the link target")

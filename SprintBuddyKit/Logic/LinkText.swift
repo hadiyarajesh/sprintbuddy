@@ -34,6 +34,10 @@ public enum LinkText {
         return out
     }
 
+    public static func linkCount(in text: String) -> Int {
+        segments(in: text).filter { if case .link = $0 { return true }; return false }.count
+    }
+
     /// The URL without scheme, `www.`, query or fragment; if that's still
     /// long, just its last three path components.
     public static func shortLabel(for url: URL) -> String {

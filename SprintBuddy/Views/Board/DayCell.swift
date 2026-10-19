@@ -102,6 +102,11 @@ struct DayCell: View {
         return Style(bg: bg, borderColor: borderColor, borderWidth: borderWidth, dashed: dashed, showShadow: showShadow, labelColor: labelColor)
     }
 
+    /// Links across all of the day's updates. The card preview clamps each
+    /// update to two lines, so links can sit past the cut-off — this keeps
+    /// them discoverable.
+    private var linkCount: Int { day.updates.reduce(0) { $0 + LinkText.linkCount(in: $1.text) } }
+
     private var showDot: Bool { day.status == .leave || day.status == .holiday }
     private var dotColor: Color { day.status == .leave ? palette.error : palette.warning }
 
@@ -202,6 +207,31 @@ struct DayCell: View {
         }
     }
 
+    private var moreText: some View {
+        Text("+\(day.updates.count - 3) more")
+            .font(.system(size: 11))
+            .foregroundStyle(palette.grey3)
+            .lineLimit(1)
+            .padding(.leading, 10)
+    }
+
+    private var linkBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "link")
+                .font(.system(size: 8.5, weight: .bold))
+            Text("\(linkCount)")
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundStyle(palette.blue)
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.vertical, 2)
+        .padding(.horizontal, 6)
+        .background(palette.blueTint)
+        .clipShape(Capsule())
+        .help(linkCount == 1 ? "1 link" : "\(linkCount) links")
+    }
+
     private func dateText(_ s: Style) -> some View {
         Text(dateStr)
             .font(.system(size: 15, weight: .bold))
@@ -267,11 +297,28 @@ struct DayCell: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            if day.updates.count > 3 {
-                Text("+\(day.updates.count - 3) more")
-                    .font(.system(size: 11))
-                    .foregroundStyle(palette.grey3)
-                    .padding(.leading, 10)
+            // The header has no room for the badge on narrow cards (the date
+            // would truncate), so it lives at the foot of the preview, beside
+            // the "+N more" line when there is one.
+            if day.updates.count > 3 && linkCount > 0 {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        moreText.fixedSize()
+                        Spacer(minLength: 0)
+                        linkBadge
+                    }
+                    VStack(alignment: .trailing, spacing: 3) {
+                        moreText.frame(maxWidth: .infinity, alignment: .leading)
+                        linkBadge
+                    }
+                }
+            } else if day.updates.count > 3 {
+                moreText
+            } else if linkCount > 0 {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    linkBadge
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
